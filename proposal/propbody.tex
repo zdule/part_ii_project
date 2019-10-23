@@ -4,7 +4,7 @@
 \vspace{6mm}
 \centerline{\large D. Živanović, Trinity College}
 \vspace{4mm}
-\centerline{\large Originator: Dr Lucian Carata and Dr Ripduman Sohan}
+\centerline{\large Originators: Dr Lucian Carata and Dr Ripduman Sohan}
 \vspace{4mm}
 \centerline{\large \today}
 
@@ -25,50 +25,66 @@
 
 % Main document
 
-% note function calls vs function call sites
 \section*{Introduction}
 
-    Dynamic tracing is an irreplaceable tool for analysing and debugging production systems. Tracing can be added to a 
-    program without recompiling it or even restarting it. It has no overhead when disabled and adding a tracing
-    probe changes only a few bytes of the program's instructions.
-    By instrumenting the operating system's functions we can easily gain insight into how programs interact 
-    with each other and use resources.
+    Dynamic tracing is an irreplaceable tool for analysing and debugging production systems. 
+    Some of the reasons tracing is so useful are that tracing has no overhead 
+    when disabled and that it can be added to a program without recompiling it or even restarting it. 
+    Furthermore, by instrumenting the kernel of an operating system we can easily gain insight into
+    the workings of any program running on the machine.
 
-    %However, to be used in production the tracing mechanism must only minimally impact the performance of the 
-    %traced program. Unfortunately this isn't the case with kprobes 
+    To be used in production a tracing mechanism mustn't significantly impact the performance of the 
+    traced program. Unfortunately, tracing in the Linux kernel can scale poorly with increasing the number of active probes.
+    The goal of this project is to enable low-overhead tracing with many active probes for the purpose of
+    understanding the system's behavior in detail.
 
-    Filtering out events, and summarizing them with a statistic can greatly reduce the amount of recorded data
-    while tracing. In the Linux kernel this is done by specifying a user-supplied program to process function call events. 
-    To guarantee safety and responsiveness this program is written in a restricted, non-Turing-complete 
-    Instruction Set Architecture called eBPF. eBPF programs are guaranteed to halt in a limited number of steps,
-    and to only perform valid memory accesses.
+    As a first step towards enhancing the tracing in Linux we should examine the mechanisms and capabilities
+    which are currently provided, namely eBPF programs and kprobes.
 
-    The kprobes mechanism of the Linux kernel implements tracing by replacing the first byte of the 
-    traced function with a software interrupt instruction whose handler does a hash table lookup on the 
-    previous value of the instruction pointer to determine which callback function to call.
+    The job of an eBPF program is to process the traced events as they occur.
+    eBPF programs are important because preprocessing the measurement data before it is recorded to 
+    memory can drastically reduce the tracing overhead. 
+    For example if we are only interested in an average of some measurements it is much better to keep 
+    a running average using eBPF while collecting the data, than to record all the data about events and 
+    then process it later.
+
+    eBPF programs are often one-off programs run inside the kernel and written to diagnose an urgent problem. 
+    As such there is a risk that an erroneous program could crash the kernel or make it unresponsive.
+    To ensure this never happens, eBPF programs are written in an restricted non-Turing-complete 
+    Instruction Set Architecture and run by a virtual machine inside the kernel.
+
+    One of the tracing mechanisms to which eBPF programs can be attached is kprobes. 
+    Kprobes implement tracing by replacing the first byte of the traced function with a software interrupt 
+    instruction whose handler does a hash table lookup on the 
+    previous value of the instruction pointer to determine which callback function to invoke.
     This leads to some limitations, namely:
 
     \vspace{-0.60em}
     \begin{itemize}
         \setlength{\itemsep}{-0.3em}
-        \item Poor scaling with the number of traced functions. This is due to the hash table used being limited in size.
+        \item Poor scaling with the number of active probes. This is because the hash table used is limited in size.
         \item Inability to attach probes to specific call sites of a function, instead of function itself. 
         This is important when we want to trace calls to a function from a specific part of the kernel,
         and tracing all calls just to discard most of the data is prohibitively inefficient
     \end{itemize}
 
-    Kamprobes, which are a probing mechanism developed by the Computer Lab's Digital Technology group, can instrument 
-    specific call sites, but they don't support attaching eBPF programs as callbacks.
+    Kamprobes, which are an alternative probing mechanism developed by the Computer Lab's Digital Technology group, 
+    can instrument specific call sites and scale better with increasing the number of active probes, 
+    but they don't support attaching eBPF programs as callbacks, and have limitations in how function arguments
+    are accessed. Additionally, kamprobes don't have any interfaces to the user space, 
+    and require the user to know the kernel space addresses of call sites to be traced,
+    which is information not readily available outside the kernel.
 
-    The goal of this project is to enhance the tracing capabilities of the Linux kernel by allowing attaching eBPF programs
-    to multiple call sites of a function in a low-overhead way. The plan is to do this by modifying the implementation of
+    This project aims to enhance the tracing capabilities of the Linux kernel by allowing attaching eBPF programs
+    to multiple call sites of a function in a scalable, low-overhead way. 
+    The plan is to do this by modifying the implementation of
     kamprobes and the Linux kernel to make it possible to register eBPF programs as kamprobes callbacks.
     I expect this enhancement to greatly reduce overhead of using eBPF with many probes, and when only some call sites
     should be traced.
 
     Furthermore I will be comparing the overhead of using eBPF programs with kamprobes and with kprobes. 
-    Finally I will demonstrate the usefulness of eBPF and kamprobes by measuring some aspect of the Linux kernels
-    performance.
+    Finally I will demonstrate the usefulness of eBPF and kamprobes by measuring detailed information 
+    about waiting in a subsystem of the Linux kernel.
  
 \section*{Starting Point}
 
@@ -92,8 +108,8 @@
     The work to be done can be split into the following parts:
 
     \begin{itemize}
-        \item Investigating how kprobes run eBPF programs, especially how the function arguments and the 
-        current call stack is passed to the eBPF program.
+        \item Investigating how eBPF programs run on top of kamprobes, especially how the program
+        accesses the function arguments and the current call stack.
        
         \item Getting familiar with the kamprobes project. Writing a simple callback function that logs 
         function arguments and attaching it to a call site in the kernel.
@@ -102,12 +118,12 @@
         the eBPF program. In the most optimistic case this could be completely done inside a kernel module,
         but it may turn out that modifying the kernel source code is needed.
 
-        \item Developing a user-space library for attaching an eBPF program to a kamprobe. This will involve 
+        \item Developing a user-space library for attaching an eBPF programs to a kamprobes. This will involve 
         choosing a suitable user space to kernel interface (ioctl, device files, sys filesystem),
         and implementing the kernel module and library functionality.
 
         \item Developing test programs that shows that executing the traced call instruction results in calling the 
-        eBPF program, and that the program can access the function arguments
+        eBPF program, and that the program can access the function arguments.
 
         %\item Developing a test that ensures that executing the traced call instruction results in calling the 
         %eBPF program with the correct function arguments and call stack, that the function call is then executed
@@ -117,23 +133,16 @@
         %are handled correctly, and that probes firing concurrently don't cause any problems.
 
         \item Comparing the performance hit that an application suffers when kernel functions are traced with kprobes
-        and with kamprobes. For example, the application can be nginx, and the performance hit can be measured
-        in decrease of throughput and increase in latency. The measurements should show how performance changes when
-        more probes are added.
+        and with kamprobes. 
+        For example, I could measure the decrease in throughput and increase in latency that nginx web server suffers
+        when parts of the kernel's network stack are traced.
+        Measurements should also be done with an increasing number of active probes to show differences in scaling
+        between kprobes and kamprobes.
 
-        \item Demonstrating the usefulness of the implementation by measuring something about the kernel, for example
-        the amount of time threads are blocked on some function.
+        \item Demonstrating the usefulness of the implementation by measuring data related to waiting in a subsytstem
+        of the kernel.
     \end{itemize}
 
-\section*{Resources required}
-
-    I will do the project on my personal laptop (i5-8250U 1.60GHz quad-core CPU, 8GB of RAM, 256GB SSD, Ubuntu 18.04 LTS).
-    
-    For backup, all files will regularly be pushed to Github. Additionally, I will backup to an external hard disk
-    once per week.
-
-    Testing kernel modules, testing custom kernel builds if needed, and measuring performance will be done on 
-    a Computer Lab owned server provided by my supervisor. To access the server {\bf I will need a Computer Lab account}.
 
 \section*{Success criteria}
 
@@ -142,8 +151,8 @@
         \item The kernel and user-space library code to instrument a function call with an eBPF program are implemented.
         Test programs demonstrating that function call arguments can be accessed by the eBPF program work.
 
-        \item The usefulness of the project is demonstrated by measuring something about the kernel using 
-        kamprobes and eBPF programs.
+        \item The usefulness of the project is demonstrated by measuring detailed information about waiting in 
+        a kernel subsystem using kamprobes and eBPF programs.
 
         \item The performance hit that an application suffers when instrumented with kprobes and kamprobes is 
         compared.
@@ -222,8 +231,7 @@
 
             {\bf Deadline 31/01/2020:} Submission of the progress report 
             
-            Choose a thing in the kernel to measure using kamprobes and eBPF,
-            and write the eBPF programs that measure them.
+            Measure metrics about waiting inside a module of the Linux kernel using kamprobes and eBPF.
 
             Milestones: The eBPF programs are written, and the metrics are measured using kamprobes.
 
@@ -264,3 +272,13 @@
 
     \end{enumerate}
     {\bf Deadline 08/05/2020:} Submission of the final dissertation
+
+\section*{Resources required}
+
+    I will do the project on my personal laptop (i5-8250U 1.60GHz quad-core CPU, 8GB of RAM, 256GB SSD, Ubuntu 18.04 LTS).
+    
+    For backup, all files will regularly be pushed to Github. Additionally, I will backup to an external hard disk
+    once per week.
+
+    Testing kernel modules, testing custom kernel builds if needed, and measuring performance will be done on 
+    a Computer Lab owned server provided by my supervisor. To access the server {\bf I will need a Computer Lab account}.
