@@ -1,4 +1,4 @@
-\centerline{\Large Computer Science Tripos -- Part II -- Project Proposal}
+\centerline{\Large Computer Science Tripos \textendash{} Part II \textendash{} Project Proposal}
 \vspace{6mm}
 \centerline{\Large Optimizing tracing instrumentation inside the Linux kernel}
 \vspace{6mm}
@@ -21,20 +21,21 @@
 \noindent
 {\bf Project Overseers:} Dr Sean Holden, Dr Andreas Vlachos
 
+\newcommand{\kamprobe}[1]{\texttt{#1}}
+
 %\vspace{4mm}
 
 % Main document
-
 \section*{Introduction}
 
     Dynamic tracing is an irreplaceable tool for analysing and debugging production systems. 
-    Some of the reasons tracing is so useful are that tracing has no overhead 
+    Some reasons tracing is so useful are that tracing has no overhead 
     when disabled and that it can be added to a program without recompiling it or even restarting it. 
     Furthermore, by instrumenting the kernel of an operating system we can easily gain insight into
     the workings of any program running on the machine.
 
     To be used in production a tracing mechanism mustn't significantly impact the performance of the 
-    traced program. Unfortunately, tracing in the Linux kernel can scale poorly with increasing the number of active probes.
+    traced program. Unfortunately, tracing in the Linux kernel can scale poorly when increasing the number of active probes.
     The goal of this project is to enable low-overhead tracing with many active probes for the purpose of
     understanding the system's behavior in detail.
 
@@ -50,10 +51,10 @@
 
     eBPF programs are often one-off programs run inside the kernel and written to diagnose an urgent problem. 
     As such there is a risk that an erroneous program could crash the kernel or make it unresponsive.
-    To ensure this never happens, eBPF programs are written in an restricted non-Turing-complete 
+    To ensure this never happens, eBPF programs are written in a restricted non-Turing-complete 
     Instruction Set Architecture and run by a virtual machine inside the kernel.
 
-    One of the tracing mechanisms to which eBPF programs can be attached is kprobes. 
+    One of the tracing mechanisms with which eBPF programs can be used is kprobes. 
     Kprobes implement tracing by replacing the first byte of the traced function with a software interrupt 
     instruction whose handler does a hash table lookup on the 
     previous value of the instruction pointer to determine which callback function to invoke.
@@ -62,16 +63,16 @@
     \vspace{-0.60em}
     \begin{itemize}
         \setlength{\itemsep}{-0.3em}
-        \item Poor scaling with the number of active probes. This is because the hash table used is limited in size.
-        \item Inability to attach probes to specific call sites of a function, instead of function itself. 
+        \item Poor scaling with increasing the number of active probes. This is because the hash table used is limited in size.
+        \item Inability to attach probes to specific call sites of a function, instead of the function itself. 
         This is important when we want to trace calls to a function from a specific part of the kernel,
-        and tracing all calls just to discard most of the data is prohibitively inefficient
+        and tracing all calls just to discard most of the data is prohibitively inefficient.
     \end{itemize}
 
     Kamprobes, which are an alternative probing mechanism developed by the Computer Lab's Digital Technology group, 
     can instrument specific call sites and scale better with increasing the number of active probes, 
-    but they don't support attaching eBPF programs as callbacks, and have limitations in how function arguments
-    are accessed. Additionally, kamprobes don't have any interfaces to the user space, 
+    but they don't support using eBPF programs as callbacks, and have limitations in how function arguments
+    are accessed. Additionally, kamprobes don't have an interface to the user space, 
     and require the user to know the kernel space addresses of call sites to be traced,
     which is information not readily available outside the kernel.
 
@@ -79,23 +80,23 @@
     to multiple call sites of a function in a scalable, low-overhead way. 
     The plan is to do this by modifying the implementation of
     kamprobes and the Linux kernel to make it possible to register eBPF programs as kamprobes callbacks.
-    I expect this enhancement to greatly reduce overhead of using eBPF with many probes, and when only some call sites
-    should be traced.
+    I expect this enhancement to greatly reduce the overhead of using eBPF when there are many active probes,
+    or when only some call sites should be traced.
 
-    Furthermore I will be comparing the overhead of using eBPF programs with kamprobes and with kprobes. 
-    Finally I will demonstrate the usefulness of eBPF and kamprobes by measuring detailed information 
+    Furthermore, I will compare the overhead of using eBPF programs with kamprobes and with kprobes. 
+    Finally, I will demonstrate the usefulness of eBPF and kamprobes by measuring detailed information 
     about waiting in a subsystem of the Linux kernel.
  
 \section*{Starting Point}
 
     This project will use the kamprobes kernel module as a dependency.
-    The kamprobes module allows attaching callbacks functions to call instructions.
-    Is currently does not have any interface accessible from the user space, and does not support
+    The kamprobes module allows the attachemnt of callback functions to call instructions.
+    It currently does not have any interface accessible from the user space, and does not support
     attaching eBPF programs as callbacks.
-    At some point extending the kamprobes module itself will likely prove convenient or necessary.
+    At some point extending the kamprobes module itself is likely to prove convenient or necessary.
 
     The project will also depend on the Linux kernel, importantly, to run eBPF programs.
-    I might need to modify parts of the kernel.
+    I might need to make very small changes to parts of the kernel.
 
     %Since kamprobes is an open source project, this will be done in terms of an open source contribution.
     %In any case only the diff of the contribution will be considered as my contribution.
@@ -115,14 +116,16 @@
         function arguments and attaching it to a call site in the kernel.
 
         \item Using the knowledge gained in the previous two steps to write the kamprobe callback that runs
-        the eBPF program. In the most optimistic case this could be completely done inside a kernel module,
-        but it may turn out that modifying the kernel source code is needed.
+        an eBPF program. This work part will involve writing the kernel module, and possibly a few simple
+        changes to the kernel source code.
+        %In the most optimistic case this could be completely done inside a kernel module,
+        %but it may turn out that small modification of the kernel source code is needed.
 
-        \item Developing a user-space library for attaching an eBPF programs to a kamprobes. This will involve 
-        choosing a suitable user space to kernel interface (ioctl, device files, sys filesystem),
-        and implementing the kernel module and library functionality.
+        \item Developing a user space library for attaching eBPF programs to kamprobes. This will involve 
+        choosing a suitable user space to kernel interface (ioctl, device files, the sys filesystem),
+        and implementing the kernel module and library functionality. % /* Note, write about testing the correctness */ 
 
-        \item Developing test programs that shows that executing the traced call instruction results in calling the 
+        \item Developing test programs that show that executing the traced call instruction results in calling the 
         eBPF program, and that the program can access the function arguments.
 
         %\item Developing a test that ensures that executing the traced call instruction results in calling the 
@@ -136,26 +139,26 @@
         and with kamprobes. 
         For example, I could measure the decrease in throughput and increase in latency that nginx web server suffers
         when parts of the kernel's network stack are traced.
-        Measurements should also be done with an increasing number of active probes to show differences in scaling
+        Measurements should also be done varying the number of active probes to show differences in scaling
         between kprobes and kamprobes.
 
-        \item Demonstrating the usefulness of the implementation by measuring data related to waiting in a subsytstem
+        \item Demonstrating the usefulness of the implementation by measuring data related to waiting in a subsystem
         of the kernel.
     \end{itemize}
 
 
 \section*{Success criteria}
 
-    This project is to be considered successful if:
+    This project should be considered successful if:
     \begin{itemize}
-        \item The kernel and user-space library code to instrument a function call with an eBPF program are implemented.
-        Test programs demonstrating that function call arguments can be accessed by the eBPF program work.
+        \item The kernel module and user space library code to instrument a function call with an eBPF program are implemented, and
+        test programs demonstrating that function call arguments can be accessed by the eBPF program work.
 
         \item The usefulness of the project is demonstrated by measuring detailed information about waiting in 
         a kernel subsystem using kamprobes and eBPF programs.
 
         \item The performance hit that an application suffers when instrumented with kprobes and kamprobes is 
-        compared.
+        measured and compared.
 
     \end{itemize}
 
@@ -163,7 +166,7 @@
 
     Possible extension to the project include:
     \begin{itemize}
-        \item Adding a user friendly way to specify which call sites to instrument. Perhaps by specifying a
+        \item Adding a user friendly way of specifying which call sites to instrument. Perhaps by specifying a
         source function, filename or module in which the function call is made, and the called function.
 
         \item Performing micro-architectural evaluation of the probing mechanisms using the performance counters
@@ -171,13 +174,13 @@
         
         \item Adding specialised data structures to eBPF. The only memory eBPF programs can use that persists after an
         eBPF program has exited are eBPF maps. An eBPF map has one of a dozen possible types which are variations
-        on arrays and hash maps. This extension deals with adding a more specialised eBPF maps to improve performance
+        on arrays and hash maps. This extension deals with adding more specialised eBPF maps to improve performance
         of eBPF tracing programs.
     \end{itemize}
 
 \section*{Timetable, milestones and deadlines}
 
-    Planned starting date is 24/10/2019. The work is split into 10 work packages:
+    Planned starting date is 24/10/2019. The work is split into the following 10 work packages:
     \begin{enumerate}
 
         \item {\bf Michaelmas weeks 3-4 (24/10/2019 - 6/11/2019)} 
@@ -197,6 +200,13 @@
             Decide how to implement a kamprobes callback that runs eBPF programs.
 
             Start implementing the callback.
+            If needed, implement simple modifications of the Linux kernel which are needed today
+            get the callback working. 
+            
+            I expect the required changes to the Linux kernel to be small and simple to write, 
+            but in case that I encounter any unexpected complications, two of the later work packages have been 
+            allocated to completeting delayed work or doing some of the extensions. In this case, I will
+            be forced to do fewer or no extensions.
 
             Milestones: An implementation plan is made, and implementation has begun.
 
@@ -208,15 +218,15 @@
 
         \item {\bf Michaelmas vacation (05/12/2019 - 15/01/2020)}
         
-            Implement the user-space library.
-            Use the user-space library to write test programs.
+            Implement the user space library.
+            Use the user space library to write test programs.
             
             Write the introduction and preparation chapters of the dissertation.
             Send these chapters to the supervisor for review.
 
             Milestones: An eBPF program can be attached to a call site from user space.
             There is an automated test showing that the code works.
-            A draft of implementation and preparation chapters is completed and sent for review.
+            A draft of introduction and preparation chapters is completed and sent for review.
 
         \item {\bf Lent weeks 1-2 (16/01/2020 - 29/01/2020)} 
 
@@ -245,9 +255,9 @@
 
             Either implement extensions or complete delayed work.
             
-            Begin working on implementation, and evaluation chapters.
+            Begin writing the implementation and evaluation chapters.
 
-            Milestones: All coding and evaluation including extensions has been completed. An early draft
+            Milestones: All coding and evaluation, including work on any extensions, has been completed. An early draft
             of the implementation and evaluation chapters is completed.
 
         \item {\bf Lent Vacation (12/03/2020 - 22/04/2020)}
@@ -282,3 +292,5 @@
 
     Testing kernel modules, testing custom kernel builds if needed, and measuring performance will be done on 
     a Computer Lab owned server provided by my supervisor. To access the server {\bf I will need a Computer Lab account}.
+
+    Given that I will have a server to test my code on, I will be able to continue working from MCS computers if my laptop fails.
