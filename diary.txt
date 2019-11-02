@@ -1,0 +1,10 @@
+31.10.2019: set up git repo and backups to hd
+
+01.11.2019: 
+- installed llvm (v6), as suggested in linux/samples/bpf
+- created a pilot module that runs ebpf program. 
+	- challanges: 
+		- can I run two probes at once, how can I know
+		- do I need to disable interrupts
+		- which function runs the eBPF program, there is no documentation
+		- how to do reference counting
