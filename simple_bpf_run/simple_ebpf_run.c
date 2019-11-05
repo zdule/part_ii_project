@@ -10,17 +10,32 @@ MODULE_AUTHOR("Dusan Zivanovic");
 MODULE_DESCRIPTION("Module that runs an ebpf program.");
 MODULE_VERSION("0.01");
 
+#include <kam/probes.h>
+
+noinline int probe_handler(void) {
+KAM_PRE_ENTRY(abc);
+    printk(KERN_INFO "Hello \n");
+KAM_PRE_RETURN(0);
+}
+
+noinline int probed_f(void) {
+    printk(KERN_INFO "PROBED\n");
+    return 0;
+}
+
 // =========================================== Param bpf_prog ==============================================
 
 int set_param_prog(const char *val, const struct kernel_param *kp)
 {
     struct bpf_prog ** arg = kp->arg;
-    struct bpf_prog * prog;
+    struct bpf_prog * prog = NULL;
     struct pt_regs regs;
+    int fd = 0; 
+    int err;
     memset(&regs, 0, sizeof(struct pt_regs));
 
-    int fd = 0; 
-    int err = kstrtoint(val, 10, &fd);
+    fd = 0;
+    err = kstrtoint(val, 10, &fd);
     if (err) return err;
     printk(KERN_INFO "Received a bpf program file descriptor: %d\n", fd);
     
@@ -37,10 +52,47 @@ int set_param_prog(const char *val, const struct kernel_param *kp)
     return 0;
 }
 
+int set_param_call_addr(const char *val, const struct kernel_param *kp)
+{
+    unsigned long long addr = 0;
+    u8 *add;
+    int err;
+    kamprobe kamp;
+    err = kstrtoull(val, 16, &addr);
+    if (err) return err;
+    add = (u8*) addr;
+    printk(KERN_INFO "Received an address to instrument: %px\n", add);
+    
+    memset(&kamp, 0, sizeof(kamp));
+    kamp.addr_type = SUBSYS_PROBE_TYPE(0,ADDR_KERNEL,ADDR_OF_CALL);
+    kamp.on_entry = probe_handler;
+    kamp.addr = add;
+
+    kamprobe_register(&kamp);
+    printk(KERN_INFO "Done registering a probe\n");
+    return 0;
+}
+
 int get_param_prog(char *buff, const struct kernel_param *kp) {
+label:
+    probed_f();
+    printk(KERN_INFO "simple_ebpf_run %px\n",&&label);
     strcpy(buff,"-1");
     return 2;
 }
+
+const struct kernel_param_ops param_ops_addr = 
+{
+    .set = &set_param_call_addr,  // Use our setter ...
+    .get = &get_param_prog,     // .. and standard getter
+};
+
+long long param_addr = 0;
+module_param_cb(addr, /*filename*/
+    &param_ops_addr,
+    &param_addr, /* pointer to variable, contained parameter's value */
+    S_IRUGO | S_IWUSR /*permissions on file*/
+);
 
 const struct kernel_param_ops param_ops_prog = 
 {
@@ -58,6 +110,7 @@ module_param_cb(prog, /*filename*/
 // ===========================================================================================================
 
 static int __init simple_ebpf_run_init(void) {
+    kamprobes_init(200);
     printk(KERN_INFO "simple_ebpf_run loaded\n");
     return 0;
 }
