@@ -4,13 +4,14 @@ from bcc import BPF
 
 # load BPF program
 b = BPF(text="""
+#include <uapi/linux/ptrace.h>
 BPF_ARRAY(count, u32, 1);
-int zdule_test(void *ctx) {
+int zdule_test(struct pt_regs *ctx, int num, char * str) {
     int id = 0;
     u32 *v = count.lookup(&id);
     if (v) {
-        *v += 1;
-        bpf_trace_printk("%d \\n", *v);
+        *v += num;
+        bpf_trace_printk("%d %d %s\\n", num, *v, str);
     }
     return 0;
 }
@@ -22,4 +23,4 @@ sysfile = open("/sys/module/simple_ebpf_run/parameters/prog",'w')
 sysfile.write(str(fd))
 sysfile.close()
 
-b.trace_print()
+#b.trace_print()
