@@ -1,5 +1,8 @@
 #!/bin/sh
 
+./kamprobes_reload.sh
+../test_victim/test_victim_reload.sh
+
 # remove old device files
 rm /dev/kambpf_list
 rm /dev/kambpf_update

@@ -1,6 +1,14 @@
 BUILD_DIR ?= $(PWD)/build
 
-all:
+.DEFAULT_GOAL := all
+
+build/user_main: user_main.c
+	gcc -I/usr/include -o build/user_main user_main.c -fsanitize=address -g
+build/user_main.so: user_main.c
+	gcc -shared -fPIC -o build/user_main.so user_main.c 
+user_main_clean:
+	rm build/user_main
+all: build/user_main build/user_main.so
 	make -C /lib/modules/$(shell uname -r)/build M=$(BUILD_DIR) src=$(PWD) modules
 clean:
 	make -C /lib/modules/$(shell uname -r)/build M=$(BUILD_DIR) src=$(PWD) clean
