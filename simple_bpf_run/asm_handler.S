@@ -11,9 +11,13 @@ kamprobe_entry_handler_asm:
     // Since the stack is growing downwards, the pt_regs structure
     // is filled from the back to the front  
 
+    sub $8, %rsp
+    push %rsp
+    pushfq
+    
     // skip ss, rsp, flags, cs, rip, orig_rax  = 6 registers
     // I dont have a use for these at the moment
-    sub $48, %rsp
+    sub $24, %rsp
 
     // Save argument carrying registers to pass them to the eBPF program
     // But also to restore them at the end of the function

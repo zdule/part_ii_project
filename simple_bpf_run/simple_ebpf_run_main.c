@@ -3,6 +3,7 @@
 #include <linux/kernel.h>
 
 #include <linux/filter.h>
+#include <linux/string.h>
 
 #include <linux/bpf.h>
 MODULE_LICENSE("GPL");
@@ -11,107 +12,88 @@ MODULE_DESCRIPTION("Module that runs an ebpf program.");
 MODULE_VERSION("0.01");
 
 #include <kam/probes.h>
-
-int kamprobe_entry_handler_asm(void);
-
-int kamprobe_entry_handler(struct bpf_prog *prog, struct pt_regs *regs) {
-    printk(KERN_INFO "Triggered : %px\n", prog);
-    //return 0;
-    return BPF_PROG_RUN(prog, regs);
-}
-
-noinline int probe_handler(void) {
-KAM_PRE_ENTRY(tag_data);
-    printk(KERN_INFO "Hello, tag: %px\n",*(tag_data));
-KAM_PRE_RETURN(0);
-}
+#include "kambpf_probe.h"
 
 noinline int probed_f(int x, char *str) {
     printk(KERN_INFO "PROBED FUNCTION %d %s\n",x, str);
     return 0;
 }
 
+noinline void probed_caller(void) {
+    probed_f(42,"Hello world");
+}
+
 // =========================================== Param bpf_prog ==============================================
 
-void probed_caller(void);
-void register_probe(u8 *addr, struct bpf_prog *prog);
-struct bpf_prog *param_prog;
+struct kambpf_probe *probe;
 
-int set_param_prog(const char *val, const struct kernel_param *kp)
-{
-    struct bpf_prog ** param_prog = kp->arg;
-    struct bpf_prog * prog = NULL;
+int set_param_probe(const char *val, const struct kernel_param *kp) {
     int fd = 0; 
-    int err;
-
-    if (*param_prog != NULL) {
-        bpf_prog_put(*param_prog);
-        *param_prog = NULL;
-    }
-
-    fd = 0;
-    err = kstrtoint(val, 10, &fd);
-    if (err) return err;
-    printk(KERN_INFO "Received a bpf program file descriptor: %d\n", fd);
-    
-    prog = bpf_prog_get_type(fd, BPF_PROG_TYPE_KPROBE); 
-    if (IS_ERR(prog)) {
-        return -EINVAL;
-    }
-
-    *param_prog = prog;
-    printk(KERN_INFO "BPF program pointer set to %px\n", prog);
-    return 0;
-}
-
-int set_param_call_addr(const char *val, const struct kernel_param *kp)
-{
     unsigned long long addr = 0;
-    u8 *add;
     int err;
-    err = kstrtoull(val, 16, &addr);
-    if (err) return err;
-    add = (u8*) addr;
-    printk(KERN_INFO "Received an address to instrument: %px\n", add);
-    register_probe(add, param_prog);
-    printk(KERN_INFO "Done registering a probe\n");
+    char *param_str;
+    size_t len;
+    
+    len = strlen(val);
+    param_str = (char *) kmalloc(len+1, GFP_KERNEL);
+    if (!param_str) {
+    	return -ENOMEM;
+    }
+    strcpy(param_str, val);
+    
+   	char *addr_str = strsep(&param_str, " ");
+   	char *fd_str = param_str;
+
+    err = kstrtoint(fd_str, 10, &fd);
+    if (err) {
+    	printk(KERN_INFO "Invalid fd format: %s\n", fd_str);
+    	return err;
+    }
+    
+    kstrtoull(addr_str, 16, &addr);
+    if (err) {
+    	printk(KERN_INFO "Invalid address format: %s\n", addr_str);
+    	return err;
+    }
+    //addr = ((unsigned long long)probed_caller)+21;
+    
+    printk(KERN_INFO "Received a bpf program file descriptor: %d\n", fd);
+    printk(KERN_INFO "Received an address to instrument: %llx\n", addr);
+    
+    if (probe != NULL) {
+    	kambpf_probe_free(probe);
+    }
+    probe = kambpf_probe_alloc_fd(addr, fd);
+    
+    if (IS_ERR(probe)) {
+    	err = PTR_ERR(probe);
+    	probe = NULL;
+    	return err;
+    }
+    
+    kfree(addr_str);
     return 0;
 }
+
+const struct kernel_param_ops param_ops_probe = 
+{
+    .set = &set_param_probe,  // Use our setter ...
+    .get = NULL,     // .. and standard getter
+};
+
+struct bpf_prog *param_probe = NULL;
+module_param_cb(probe, /*filename*/
+    &param_ops_probe, /*operations*/
+    &probe, /* pointer to variable, contained parameter's value */
+    S_IWUSR /*permissions on file*/
+);
+
+// ======================================= Param trigger ====================================================
 
 int set_param_trigger(const char *val, const struct kernel_param *kp) {
     probed_caller();
     return 0;
 }
-
-const struct kernel_param_ops param_ops_addr = 
-{
-    .set = &set_param_call_addr,  // Use our setter ...
-    .get = NULL,     // .. and standard getter
-};
-
-long long no_parameter = 0;
-module_param_cb(addr, /*filename*/
-    &param_ops_addr,
-    &no_parameter, /* pointer to variable, contained parameter's value */
-    S_IWUSR /*permissions on file*/
-);
-
-const struct kernel_param_ops param_ops_prog = 
-{
-    .set = &set_param_prog,  // Use our setter ...
-    .get = NULL,     // .. and standard getter
-};
-
-struct bpf_prog *param_prog = NULL;
-module_param_cb(prog, /*filename*/
-    &param_ops_prog, /*operations*/
-    &param_prog, /* pointer to variable, contained parameter's value */
-    S_IWUSR /*permissions on file*/
-);
-
-char test_address_buffer[20];
-char *test_address = test_address_buffer;
-module_param(test_address, charp, S_IRUSR);
 
 const struct kernel_param_ops param_ops_trigger = {
     .set = set_param_trigger,
@@ -124,6 +106,12 @@ module_param_cb(trigger,
     S_IWUSR
 );
 
+// ==================================== Param test_address =================================================
+
+char test_address_buffer[20];
+char *test_address = test_address_buffer;
+module_param(test_address, charp, S_IRUSR);
+
 void init_test_address_string(void) {
     u8 *probed_instruction = (u8*) probed_caller + 21;
     snprintf(test_address_buffer, sizeof(test_address_buffer), "%lx", (unsigned long) probed_instruction);
@@ -131,24 +119,6 @@ void init_test_address_string(void) {
 
 // ===========================================================================================================
 
-noinline void probed_caller(void) {
-    probed_f(42,"Hello world");
-}
-
-void register_probe(u8 *addr, struct bpf_prog *prog) {
-    kamprobe kamp;
-    
-    memset(&kamp, 0, sizeof(kamp));
-    kamp.addr_type = SUBSYS_PROBE_TYPE(0,ADDR_KERNEL,ADDR_OF_CALL);
-    kamp.on_entry = kamprobe_entry_handler_asm;
-    prog = bpf_prog_inc(prog);
-    printk(KERN_INFO "Probbing with program %px\n",prog);
-    kamp.tag_data = (void *) prog;
-    kamp.addr = addr;
-
-    kamprobe_register(&kamp);
-}
-// ===========================================================================================================
 static int __init simple_ebpf_run_init(void) {
     kamprobes_init(200);
     init_test_address_string();
@@ -157,6 +127,11 @@ static int __init simple_ebpf_run_init(void) {
 }
 
 static void __exit simple_ebpf_run_exit(void) {
+    if (probe != NULL) {
+    	kambpf_probe_free(probe);
+    	probe = NULL;
+    }
+    
     printk(KERN_INFO "simple_ebpf_run unloaded\n");
 }
 

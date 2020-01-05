@@ -8,3 +8,48 @@
 		- do I need to disable interrupts
 		- which function runs the eBPF program, there is no documentation
 		- how to do reference counting
+		
+
+02.01.2020: Workload plan
+- Return probes:
+	- access to arguments and stack pointer at the time of return (like the return instruction is instrumented)
+
+- Testing
+	- Unit test of the module itself? (is the module loaded, are device files there)
+	- Entry probes
+		- Correct instrumentation:
+			- call stack
+			- c arguments (all registers + 2 on stack)
+			- sp and ip registers are correct
+			- registers set by assembly? The idea would be to be independent of the c calling convention when testing
+			
+		- No unwanted side-effects:
+			- traced function gets executed, and can access registers
+		
+	- Return probes testing:
+		- Correct implementation:
+			- probes get correct registers from the end of the function
+			  most noteably the return value and call stack
+			
+		- No unwanted side-effects:
+			- the return occurs and the callee can't tell the probe executed... 
+		
+	- Race conditions:
+		- Multiple executions of the traced function
+		- Multiple calls while a probe is added
+		- Multiple calls while a probe is removed (?)
+		
+	- Other
+		- Multiple probes for same function (good to know if it works)
+		
+- bpftool? 
+	- would be good not to rely on bcc and dlls
+	
+- C Library
+	- add fds? best that way.. 
+	
+	
+04.01.2020: Mapping from ubuntu kernel names to mainline tags
+https://people.canonical.com/~kernel/info/kernel-version-map.html
+Source of my kernel sans the ubuntu patches https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/tree/?h=linux-4.15.y
+4.15.0-72.81 -> 4.15.18

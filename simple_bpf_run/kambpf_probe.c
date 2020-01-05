@@ -48,13 +48,8 @@ struct kambpf_probe *kambpf_probe_alloc(unsigned long instruction_address, struc
         err = -ENOMEM;
         goto err;
     }
-
-    /*kbp->bpf_prog = bpf_prog_get_type(bpf_prog_fd, BPF_PROG_TYPE_KPROBE); 
-    if (IS_ERR(kbp->bpf_prog)) {
-        err = PTR_ERR(kbp->bpf_prog);
-        goto err_kbp;
-    }*/
-    kbp->bpf_prog = bpf_prog_get(bpf_prog);
+    
+    kbp->bpf_prog = bpf_prog_inc(bpf_prog);
 
     kbp->ret_addr = instruction_address + 5; 
     kbp->call_dest = callq_target(instruction_address);
@@ -75,7 +70,6 @@ struct kambpf_probe *kambpf_probe_alloc(unsigned long instruction_address, struc
 
 err_bpf:
     bpf_prog_put(kbp->bpf_prog);
-err_kbp:
     kfree(kbp);
 err:
     return ERR_PTR(err);
@@ -83,11 +77,14 @@ err:
 
 struct kambpf_probe *kambpf_probe_alloc_fd(unsigned long instruction_address, u32 bpf_prog_fd) {
 	struct bpf_prog *prog = bpf_prog_get_type(bpf_prog_fd, BPF_PROG_TYPE_KPROBE); 
+	struct kambpf_probe *probe;
     if (IS_ERR(prog)) {
-        return ERR_PTR(PTR_ERR(kbp->bpf_prog));
+        return ERR_PTR(PTR_ERR(prog));
     }
     
-    return kambpf_probe_alloc(instruction_address, prog);
+    probe = kambpf_probe_alloc(instruction_address, prog);
+    bpf_prog_put(prog);
+    return probe;
 }
 
 void kambpf_probe_free(struct kambpf_probe *kbp) {

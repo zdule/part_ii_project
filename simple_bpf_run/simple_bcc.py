@@ -5,22 +5,25 @@ from bcc import BPF
 # load BPF program
 b = BPF(text="""
 #include <uapi/linux/ptrace.h>
-BPF_ARRAY(count, u32, 1);
-int zdule_test(struct pt_regs *ctx, int num, char * str) {
-    int id = 0;
-    u32 *v = count.lookup(&id);
-    if (v) {
-        *v += num;
-        bpf_trace_printk("%d %d %s\\n", num, *v, str);
-    }
+int zdule_test(struct pt_regs *ctx) {
+    bpf_trace_printk("Hello\\n");
     return 0;
 }
 """)
 
 b.attach_kprobe(event="sys_mkdir",fn_name="zdule_test")
 fd = b.funcs.items()[0][1].fd
-sysfile = open("/sys/module/simple_ebpf_run/parameters/prog",'w')
-sysfile.write(str(fd))
+
+addrfile = open("/sys/module/simple_ebpf_run/parameters/test_address", 'r')
+addr = addrfile.readline().strip()
+addrfile.close()
+
+sysfile = open("/sys/module/simple_ebpf_run/parameters/probe",'w')
+sysfile.write(addr + " " + str(fd))
 sysfile.close()
+
+triggerfile = open("/sys/module/simple_ebpf_run/parameters/trigger",'w')
+triggerfile.write("\n")
+triggerfile.close()
 
 #b.trace_print()
