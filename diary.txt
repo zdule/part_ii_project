@@ -17,6 +17,7 @@
 - Testing
 	- Unit test of the module itself? (is the module loaded, are device files there)
 	- Entry probes
+		- Gets called at all
 		- Correct instrumentation:
 			- call stack
 			- c arguments (all registers + 2 on stack)
@@ -27,6 +28,7 @@
 			- traced function gets executed, and can access registers
 		
 	- Return probes testing:
+		- Gets called at all
 		- Correct implementation:
 			- probes get correct registers from the end of the function
 			  most noteably the return value and call stack

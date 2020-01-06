@@ -27,22 +27,10 @@ noinline void probed_caller(void) {
 
 struct kambpf_probe *probe;
 
-int set_param_probe(const char *val, const struct kernel_param *kp) {
+int set_param_probe(const char *fd_str, const struct kernel_param *kp) {
     int fd = 0; 
     unsigned long long addr = 0;
     int err;
-    char *param_str;
-    size_t len;
-    
-    len = strlen(val);
-    param_str = (char *) kmalloc(len+1, GFP_KERNEL);
-    if (!param_str) {
-    	return -ENOMEM;
-    }
-    strcpy(param_str, val);
-    
-   	char *addr_str = strsep(&param_str, " ");
-   	char *fd_str = param_str;
 
     err = kstrtoint(fd_str, 10, &fd);
     if (err) {
@@ -50,15 +38,10 @@ int set_param_probe(const char *val, const struct kernel_param *kp) {
     	return err;
     }
     
-    kstrtoull(addr_str, 16, &addr);
-    if (err) {
-    	printk(KERN_INFO "Invalid address format: %s\n", addr_str);
-    	return err;
-    }
-    //addr = ((unsigned long long)probed_caller)+21;
+    addr = ((unsigned long long)probed_caller)+21;
     
     printk(KERN_INFO "Received a bpf program file descriptor: %d\n", fd);
-    printk(KERN_INFO "Received an address to instrument: %llx\n", addr);
+    printk(KERN_INFO "Calculated the address to instrument: %llx\n", addr);
     
     if (probe != NULL) {
     	kambpf_probe_free(probe);
@@ -71,7 +54,7 @@ int set_param_probe(const char *val, const struct kernel_param *kp) {
     	return err;
     }
     
-    kfree(addr_str);
+    probed_caller();
     return 0;
 }
 
