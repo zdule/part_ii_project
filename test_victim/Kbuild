@@ -1,1 +1,3 @@
-obj-m += test_victim.o
+obj-m += test_victim_main.o
+test_victim_main-objs += test_victim.o tests/entry_probe_correctness/kernel.o kambpf_probe/kambpf_probe.o kambpf_probe/asm_handler.o
+ccflags-y := -I/usr/local/include

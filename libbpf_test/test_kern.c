@@ -25,7 +25,7 @@ struct bpf_map_def SEC("maps") perf_event = {
 	.max_entries = 16,
 };
 
-SEC("kprobe/sys_mkdir")
+SEC("kprobe/none124sfvda")
 int prog(struct pt_regs *ctx)
 {
 	char fmt[] = "Run bpf %s";
