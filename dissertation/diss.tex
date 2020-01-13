@@ -1,0 +1,169 @@
+% The master copy of this demo dissertation is held on my filespace
+% on the cl file serve (/homes/mr/teaching/demodissert/)
+
+% Last updated by MR on 2 August 2001
+
+\documentclass[12pt,twoside,notitlepage]{report}
+
+\usepackage{a4}
+\usepackage{verbatim}
+%\usepackage{navigator}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks,
+    citecolor={black},
+    filecolor={black},
+    linkcolor={black},
+    urlcolor={black}
+}
+
+%\input{epsf}                            % to allow postscript inclusions
+% On thor and CUS read top of file:
+%     /opt/TeX/lib/texmf/tex/dvips/epsf.sty
+% On CL machines read:
+%     /usr/lib/tex/macros/dvips/epsf.tex
+
+
+
+\raggedbottom                           % try to avoid widows and orphans
+\sloppy
+\clubpenalty1000%
+\widowpenalty1000%
+
+\addtolength{\oddsidemargin}{6mm}       % adjust margins
+\addtolength{\evensidemargin}{-8mm}
+
+\renewcommand{\baselinestretch}{1.1}    % adjust line spacing to make
+                                        % more readable
+\usepackage{biblatex}
+\addbibresource{refs.bib}
+\begin{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Title
+
+
+\pagestyle{empty}
+
+\hfill{\LARGE \bf Dušan Živanović}
+
+\vspace*{60mm}
+\begin{center}
+\Huge
+{\bf Optimizing tracing instrumentation inside the Linux kernel} \\
+\vspace*{5mm}
+Computer Science Tripos -- Part II \\
+\vspace*{5mm}
+Tirinty College \\
+\vspace*{5mm}
+2020
+\end{center}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Proforma, table of contents and list of figures
+
+\setcounter{page}{1}
+\pagenumbering{roman}
+\pagestyle{plain}
+
+\chapter*{Acknowledgements}
+\chapter*{Declaration}
+    I, Dušan Živanović of Trinity College, being a candidate for Part II of the Computer Science Tripos, hereby declare that this dissertation and the work described in it are my own work, unaided except as may be specified below, and that the dissertation does not contain material that has already been used to any substantial extent for a comparable purpose. 
+
+    I, Dušan Živanović of Trinity College, am content for my dissertation to be made available to the students and staff of the University. 
+
+    Signed 
+
+    Date 
+
+    \bigskip
+    \leftline{Signed [signature]}
+
+    \medskip
+    \leftline{Date [date]}
+
+
+\chapter*{Proforma}
+
+
+{\large
+\begin{tabular}{ll}
+Candidate Number:   & \bf TBD                   \\
+Project Title:      & \bf Optimizing tracing instrumentation \\
+                    & \bf inside the Linux kernel \\
+Examination:        & \bf Computer Science Tripos -- Part II, 2020      \\
+Word Count:         & \bf TBD \\
+Line Count:         & \bf TBD \\
+Project Originator: & Dr Lucian Carata and Dr Ripduman Sohan     \\
+Supervisor:         & Dr Lucian Carata                  \\ 
+\end{tabular}
+}
+
+
+\section*{Original Aims of the Project}
+
+
+\section*{Work Completed}
+
+
+\section*{Special Difficulties}
+
+
+
+\tableofcontents
+
+\listoffigures
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% now for the chapters
+
+\cleardoublepage        % just to make sure before the page numbering
+                        % is changed
+
+\setcounter{page}{1}
+\pagenumbering{arabic}
+\pagestyle{headings}
+
+\chapter{Introduction}
+%\outline{0}{Introduction}
+    This dissertation introduces kambpf, a flexible, low-overhead function-call tracing system for the Linux kernel. Compared to the tracing capabilities currently in the Linux kernel, kambpf has a lower overhead and the added flexibility instrumenting any subset of call sites of a given function. Compared to the kamprobes project on which it builds upon, kambpf provides the flexibility of being programmable with eBPF, and an interface from the user space. 
+
+    The kambpf system is available as a loadable kernel module with its functionality exported to the user space via a simple to use C library.
+
+    \section{Motivation}
+        %There is a class of bugs and performance issues that are impractical or impossible to be reproduced by a developer in a testing environment
+        The behaviour and performance of a computer system is influenced by the software components it runs, the hardware on which it runs, how the system is configured, and the data it processes. It is thus inevitable that problems which were not be observed, and are difficult to reproduce in development and testing occur in production. In such cases it is often up to the system integrator to analyse the performance issues.\cite{DTrace2004}
+        
+        Instrumenting operating system's kernel, because it is the interface through which all processes interact with each other and with the hardware, is a great way to observe and analyse the behaviour of all processes running on the system. By instrumenting the kernel the system integrator can find performance bottlenecks and processes that are misbehaving. In particular, dynamic tracing is a great way to instrument long-running software such as the kernel, because it doesn't require recompiling or restarting to enable and disable the instrumentation.\cite{DynamicPI1994}
+
+    \section{Previous work}
+
+\chapter{Preparation}
+%\outline{0}{Preparation}
+    \section{Theoretical background} 
+        \subsection{Linux kernel loadable modules}
+        \subsection{kprobes}
+        \subsection{kamprobes}
+        \subsection{eBPF}
+   
+    \section {Requirements analysis} 
+        
+    \section{Choice of tools and languages}
+
+        - scarce documentation, so reading source
+
+    \section{Development strategy}
+
+    \section{Starting point}
+
+    \section{Open source licensing}
+
+    \section{Summary}
+
+\printbibliography
+
+\chapter*{Project Proposal}
+
+%\input{propbody}
+
+\end{document}
