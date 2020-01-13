@@ -4,33 +4,23 @@
 #include <stdlib.h>
 #include <sys/ioctl.h>
 #include <unistd.h> 
+#include <assert.h>
 
 #include "messages.h"
+#include "../test_helpers.h"
 #include "../../ioctls.h"
+#include "../../libkambpf/libkambpf.h"
+
 void sample(void *ctx, int cpu, void *data, __u32 size) {
 	struct entry_probe_correctness_message *x = (struct entry_probe_correctness_message *) data;
-	printf("Message a = %lld, b = %lld\n",x->args.arg1, x->args.arg2);
+	passert(x->args.arg1 == 11001 && x->args.arg2 == 11002, 
+			"Incorrect arguments recorded %lld %lld\n", x->args.arg1, x->args.arg2);
 }
 
 int main(int argc, char **argv) {
-	struct bpf_object *obj = bpf_object__open(argv[1]);
-	if (!obj) {
-		puts("Could not open object");
-		exit(1);
-	}
-	int ret = bpf_object__load(obj);
-	if (ret) {
-		puts("Could not load object");
-		exit(-ret);
-	}
-	struct bpf_program *prog = bpf_object__find_program_by_name(obj,"prog");
-	if (!prog) {
-		puts("Could not select program from file");
-        exit(1);
-	}
-
+	struct bpf_object *obj = load_obj_or_exit(argv[1]);
+	struct bpf_program *prog = find_program_by_name_or_exit(obj,"prog");
 	int fd = bpf_program__fd(prog);
-    printf("FD: %d\n",fd);
 	
 	struct perf_buffer_opts opts = {
 		.sample_cb = sample,
@@ -38,32 +28,32 @@ int main(int argc, char **argv) {
 		.ctx = NULL,
 	};
 
-	int perf_event_array_fd = bpf_object__find_map_fd_by_name(obj,"perf_event");
-	printf("Perf event array: %d\n",perf_event_array_fd);
-	struct perf_buffer *pb = perf_buffer__new(perf_event_array_fd, 2, &opts);
+	struct perf_buffer *pb = setup_perf_events_cb(obj, "perf_event", 2, &opts);
 
     int ioctlfd = open("/dev/test_victim", O_RDONLY);
-    if (!ioctlfd) {
-        perror("Error ioctling the test victim");
-        exit(1);
-    }
-    int erry = ioctl(ioctlfd, KAMBPF_SET_PROGRAM , FUNCTION_N_PROGRAM(0, fd));  
-    if (erry) {
-        printf("Error could not instrument function: %d\n",erry);
-        exit(1);
-    }
+	passert(ioctlfd > 0, "Error opening testing device %s, ioctlfd=%d","/dev/test_victim",ioctlfd);
+
+    uint64_t call_addr;
+
+    int erry = ioctl(ioctlfd, IOCTL_GET_EPC , &call_addr);  
+	passert(erry == 0, "Error retrieving address to probe, code=%d", erry);
+
+	struct kambpf_updates_buffer *updates = kambpf_open_updates_device("/dev/kambpf_update", -1);
+	kambpf_add_probe(updates, call_addr, fd);
     struct function_arguments args = {
         .arg1 = 11001,
         .arg2 = 11002,
     };
-    int errx = ioctl(ioctlfd,  KAMBPF_RUN_XOR10 , &args);
-    if (errx) {
-        printf("Error running instrumented function: %d\n",errx);
-        exit(1);
-    }
+
+    int errx = ioctl(ioctlfd, IOCTL_RUN_EPC , &args);
+	passert(errx == 0, "Error triggering the probed function, code=%d", errx);
+
     close(ioctlfd);
 	
-	perf_buffer__poll(pb, 1000);
+	int cnt = perf_buffer__poll(pb, 50);
+	passert(cnt == 1, "Number of events triggered not one cnt=%d", cnt);
+
+	perf_buffer__free(pb);
 	bpf_object__unload(obj);
 	return 0;
 }

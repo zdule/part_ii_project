@@ -1,0 +1,6 @@
+[submodule "kambpf/libkambpf"]
+	path = kambpf/libkambpf
+	url = git@github.com:zdule/libkambpf.git
+[submodule "test_victim/libkambpf"]
+	path = test_victim/libkambpf
+	url = git@github.com:zdule/libkambpf.git

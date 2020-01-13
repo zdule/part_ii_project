@@ -23,10 +23,6 @@ struct entry_probe_correctness_message {
     __u64 stack_id; 
 };
 
-struct function_invocation {
-    struct function_arguments args;
-    __u32 func_id;
-};
 
 #ifdef __KERNEL__ 
     #undef __u64

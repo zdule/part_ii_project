@@ -36,7 +36,8 @@ int prog(struct pt_regs *ctx)
         },
         .stack_id = 0,
     };
-
+    
+    bpf_printk("HELLO FROM BPF\n");
     //bpf_probe_read_kernel(&message.args.arg7, sizeof(message.args.arg7), (void *) ctx->rsp);
     //bpf_probe_read_kernel(&message.args.arg8, sizeof(message.args.arg8), (void *) ctx->rsp+8);
 

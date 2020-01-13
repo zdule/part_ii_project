@@ -1,5 +1,4 @@
 #!/bin/sh
-./kamprobes_reload.sh
 
 # remove old device files
 rm /dev/kambpf_list
@@ -8,7 +7,9 @@ rm /dev/kambpf_update
 # unload old version of the module
 rmmod kambpf
 
-insmod ./build/kambpf.ko || exit 1
+~/kambpf/kamprobes_reload.sh
+
+insmod ~/kambpf/build/kambpf.ko || exit 1
 
 major=`cat /proc/devices | grep kambpf | cut -d ' ' -f 1`
 

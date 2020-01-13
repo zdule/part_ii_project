@@ -6,6 +6,6 @@ struct _probe_table_empty_entry {
     struct list_head empty_entries;    
 };
 
-#include "kambpf.h"
+#include "libkambp/kambpf.h"
 
 #endif // KAMBPF_KERNEL_H
