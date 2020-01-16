@@ -40,3 +40,12 @@ struct perf_buffer *setup_perf_events_cb(struct bpf_object *obj,
 	}
 	return pb;
 }
+
+int find_map_fd_by_name_or_exit(struct bpf_object *obj, const char *map_name) {
+	struct bpf_map *map = bpf_object__find_map_by_name(obj, map_name);
+	if (!map || libbpf_get_error(map)) {
+		puts("Could not select perf evnets map from file");
+        exit(EXIT_FAILURE);
+	}
+    return bpf_map__fd(map);
+}

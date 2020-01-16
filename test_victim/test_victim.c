@@ -30,13 +30,19 @@ int release(struct inode *inode, struct file *filp) {
 
 #include "ioctls.h"
 #include "tests/entry_probe_correctness/kernel.h"
+#include "tests/entry_probe_safety/kernel.h"
+
 
 long test_ioctl(struct file *filp, unsigned int cmd, unsigned long arg) {
+	printk(KERN_INFO"ioctl\n");
     switch (cmd) {
+		case IOCTL_GET_EPS:
+		case IOCTL_RUN_EPS:
+			printk(KERN_INFO"eps\n");
+			return EPS_handle_ioctl(cmd,arg);
         case IOCTL_GET_EPC:
         case IOCTL_RUN_EPC:
             return EPC_handle_ioctl(cmd,arg);
-            break;
         default:
             return -EINVAL;
     }

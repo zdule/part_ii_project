@@ -17,12 +17,13 @@ struct bpf_map_def SEC("maps") stacks = {
 	.type = BPF_MAP_TYPE_STACK_TRACE,
 	.key_size = sizeof(__u32),
 	.value_size = 10*sizeof(__u64),
-	.max_entries = 10,
+	.max_entries = 2,
 };
 
 SEC("kprobe/")
 int prog(struct pt_regs *ctx)
 {
+    int sid;
     struct entry_probe_correctness_message message = {
         .args = {
             .arg1 = PT_REGS_PARM1(ctx),
@@ -41,7 +42,10 @@ int prog(struct pt_regs *ctx)
     //bpf_probe_read_kernel(&message.args.arg7, sizeof(message.args.arg7), (void *) ctx->rsp);
     //bpf_probe_read_kernel(&message.args.arg8, sizeof(message.args.arg8), (void *) ctx->rsp+8);
 
-    message.stack_id = bpf_get_stackid(ctx, &stacks, BPF_F_FAST_STACK_CMP | BPF_F_REUSE_STACKID);
+    sid = bpf_get_stackid(ctx, &stacks, BPF_F_FAST_STACK_CMP | BPF_F_REUSE_STACKID);
+    bpf_printk("stack id: %d\n", sid);
+    message.stack_id = sid;
+
 
     bpf_perf_event_output(ctx, &perf_event, BPF_F_CURRENT_CPU, &message, sizeof(message));
 	

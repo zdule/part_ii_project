@@ -13,7 +13,7 @@ kamprobe_entry_handler_asm:
 
     sub $8, %rsp
     push %rsp
-    pushfq
+    pushfq // push eflags
     
     // skip ss, rsp, flags, cs, rip, orig_rax  = 6 registers
     // I dont have a use for these at the moment

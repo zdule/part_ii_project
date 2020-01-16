@@ -1,11 +1,12 @@
 BUILD_DIR ?= $(PWD)/build
 SRC_DIR ?= $(PWD)
 
-.PHONY: libkambpf
+.PHONY: libkambpf test_safety
 
-all: $(BUILD_DIR)/ksyms.o $(BUILD_DIR)/tests/entry_probe_correctness/bpf.o $(BUILD_DIR)/tests/entry_probe_correctness/userland
+all: $(BUILD_DIR)/ksyms.o $(BUILD_DIR)/tests/entry_probe_correctness/bpf.o $(BUILD_DIR)/tests/entry_probe_correctness/userland test_safety
 	mkdir -p $(BUILD_DIR)/kambpf_probe
 	make -C /lib/modules/$(shell uname -r)/build M=$(BUILD_DIR) src=$(PWD) modules
+
 clean:
 	make -C /lib/modules/$(shell uname -r)/build M=$(BUILD_DIR) src=$(PWD) clean
 	SRC_DIR=$(SRC_DIR)/libkambpf OUT_DIR=$(BUILD_DIR)/libkambpf make -C libkambpf clean
@@ -26,6 +27,15 @@ $(BUILD_DIR)/tests/entry_probe_correctness/bpf.o: tests/entry_probe_correctness/
 	mkdir -p build/tests/entry_probe_correctness
 	clang -I/usr/include/x86_64-linux-gnu -O2 -emit-llvm \
 	 -c $< -o - | llc -march=bpf -filetype=obj -o $@
+
+test_safety: libkambpf
+	SRC_DIR=$(SRC_DIR)/tests/entry_probe_safety \
+	BUILD_DIR=$(BUILD_DIR)/tests/entry_probe_safety \
+	TEST_HELPERS=$(BUILD_DIR)/tests/test_helpers.o \
+	LIB_KAMBPF=$(BUILD_DIR)/libkambpf/libkambpf.o \
+	make -C tests/entry_probe_safety
+
+
 
 libkambpf:
 	SRC_DIR=$(SRC_DIR)/libkambpf OUT_DIR=$(BUILD_DIR)/libkambpf make -C libkambpf

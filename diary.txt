@@ -55,3 +55,8 @@
 https://people.canonical.com/~kernel/info/kernel-version-map.html
 Source of my kernel sans the ubuntu patches https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/tree/?h=linux-4.15.y
 4.15.0-72.81 -> 4.15.18
+
+
+void synchronize_rcu_tasks ( void);
+to free dynamic trampolines buffers :)
+https://www.youtube.com/watch?v=93uE_kWWQjs

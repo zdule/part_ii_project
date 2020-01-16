@@ -15,7 +15,7 @@ noinline u64 EPC_traced_caller(struct function_arguments *args) {
 u64 EPC_call_address = ((u64) EPC_traced_caller) + 0x26;
 
 long EPC_handle_ioctl(unsigned int cmd, unsigned long arg) {
-    printk(KERN_INFO"Ioctl triggered\n");
+    printk(KERN_INFO"correctness ioctl\n");
     if (cmd == IOCTL_GET_EPC) {
         copy_to_user((void *)arg, &EPC_call_address, sizeof(EPC_call_address));
         return 0;

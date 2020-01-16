@@ -1,3 +1,4 @@
+#include <bpf/bpf.h>
 #include <bpf/libbpf.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -10,22 +11,41 @@
 #include "../test_helpers.h"
 #include "../../ioctls.h"
 #include "../../libkambpf/libkambpf.h"
+#include "../../ksyms/ksyms.h"
+
+struct perf_buf_cb_ctx {
+    bool triggered;
+    int stacks_fd;
+};
 
 void sample(void *ctx, int cpu, void *data, __u32 size) {
+    struct perf_buf_cb_ctx *context = (struct perf_buf_cb_ctx *) ctx;
 	struct entry_probe_correctness_message *x = (struct entry_probe_correctness_message *) data;
 	passert(x->args.arg1 == 11001 && x->args.arg2 == 11002, 
 			"Incorrect arguments recorded %lld %lld\n", x->args.arg1, x->args.arg2);
+    context->triggered = true;
+    uint64_t stacks[10];
+    printf("%llx\n", x->stack_id);
+    bpf_map_lookup_elem(context->stacks_fd, &x->stack_id, stacks);
+    for(int i = 0; i < 10; i++)
+        printf("%lx\n",stacks[i]);
 }
 
 int main(int argc, char **argv) {
 	struct bpf_object *obj = load_obj_or_exit(argv[1]);
 	struct bpf_program *prog = find_program_by_name_or_exit(obj,"prog");
 	int fd = bpf_program__fd(prog);
-	
+    int stacks_fd = find_map_fd_by_name_or_exit(obj, "stacks");
+
+    struct perf_buf_cb_ctx context = {
+        .triggered = false,
+        .stacks_fd = stacks_fd,
+    };
+
 	struct perf_buffer_opts opts = {
 		.sample_cb = sample,
 		.lost_cb = NULL,
-		.ctx = NULL,
+		.ctx = &context,
 	};
 
 	struct perf_buffer *pb = setup_perf_events_cb(obj, "perf_event", 2, &opts);
@@ -52,6 +72,7 @@ int main(int argc, char **argv) {
 	
 	int cnt = perf_buffer__poll(pb, 50);
 	passert(cnt == 1, "Number of events triggered not one cnt=%d", cnt);
+    passert(context.triggered, "Event not registered");
 
 	perf_buffer__free(pb);
 	bpf_object__unload(obj);
