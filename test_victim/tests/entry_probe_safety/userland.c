@@ -28,7 +28,7 @@ int main(int argc, char **argv) {
 	passert(erry == 0, "Error retrieving address to probe, code=%d", erry);
 	
 	struct kambpf_updates_buffer *updates = kambpf_open_updates_device("/dev/kambpf_update", -1);
-	kambpf_add_probe(updates, call_addr, fd);
+	int pos = kambpf_add_probe(updates, call_addr, fd);
 
     control_block_t c;    
     
@@ -41,6 +41,8 @@ int main(int argc, char **argv) {
 	passert(errx == 0, "Error triggering the probed function, code=%d", errx);
 
     close(ioctlfd);
+
+	kambpf_remove_probe(updates, pos);
 
     passert(c[CALLEE_OUT_ARGUMENT_REGISTER] == 11001, "register garbled %llx\n", c[CALLEE_OUT_ARGUMENT_REGISTER]);
     passert(c[CALLEE_OUT_TOP_OF_THE_STACK] == 11002, "stack garbled %llx\n", c[CALLEE_OUT_TOP_OF_THE_STACK]);

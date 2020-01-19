@@ -6,39 +6,34 @@
 #include <kam/asm2bin.h>
 #include "kambpf_probe.h"
 
-int kamprobe_entry_handler_asm(void);
+int kambpf_entry_handler_asm(void);
+int kambpf_return_handler_asm(void);
 
-int kamprobe_entry_handler(struct kambpf_probe *kbp, struct pt_regs *regs) {
-    u64 pseudo_stack[4];
-    pseudo_stack[1] = kbp->ret_addr;
-    pseudo_stack[0] = regs->bp;
-    regs->sp = (unsigned long) &pseudo_stack[0];
-    regs->bp = (unsigned long) &pseudo_stack[0]; // careful not to restore the wrong bp later
-    regs->ip = kbp->call_dest;
+// NOTE, if needed the call destination could be put in r11
 
-    printk(KERN_INFO "Triggered : %px\n", kbp->bpf_prog);
-    //return 0;
-    return BPF_PROG_RUN(kbp->bpf_prog, regs);
+u64 kambpf_entry_handler(struct kambpf_probe *kbp, struct pt_regs *regs) {
+    printk("Entry prog %px\n", kbp->bpf_entry_prog);
+    regs->ip = kbp->call_addr;
+    return BPF_PROG_RUN(kbp->bpf_entry_prog, regs);
 }
 
-/*
-TODO: retprobes
-noinline int probe_handler(void) {
-KAM_PRE_ENTRY(tag_data);
-    printk(KERN_INFO "Hello, tag: %px\n",*(tag_data));
-KAM_PRE_RETURN(0);
+void kambpf_return_handler(struct kambpf_probe *kbp, struct pt_regs *regs) {
+    printk("Entry prog %px\n", kbp->bpf_return_prog);
+    regs->ip = kbp->call_addr;
+    BPF_PROG_RUN(kbp->bpf_return_prog, regs);
 }
-*/
 
 unsigned long callq_target(unsigned long addr) {
     return *((int *) (addr+1)) + 5 + addr;
 }
 
-struct kambpf_probe *kambpf_probe_alloc(unsigned long instruction_address, struct bpf_prog *bpf_prog) {
+struct kambpf_probe *kambpf_probe_alloc_aux(unsigned long instruction_address, struct bpf_prog *bpf_entry_prog,
+											struct bpf_prog *bpf_return_prog) {
     struct kambpf_probe *kbp;
     int err = 0;
 
     if (!is_call_insn((u8 *)instruction_address)) {
+        printk(KERN_INFO"Not call instruction %lx", instruction_address);
         err = -EINVAL;
         goto err;
     }
@@ -49,49 +44,73 @@ struct kambpf_probe *kambpf_probe_alloc(unsigned long instruction_address, struc
         goto err;
     }
 
-    /*kbp->bpf_prog = bpf_prog_get_type(bpf_prog_fd, BPF_PROG_TYPE_KPROBE); 
-    if (IS_ERR(kbp->bpf_prog)) {
-        err = PTR_ERR(kbp->bpf_prog);
-        goto err_kbp;
-    }*/
-    kbp->bpf_prog = bpf_prog_get(bpf_prog);
-
-    kbp->ret_addr = instruction_address + 5; 
-    kbp->call_dest = callq_target(instruction_address);
+    kbp->call_addr = instruction_address ; 
+    kbp->bpf_entry_prog = kbp->bpf_return_prog = NULL;
 
     memset(&kbp->kp, 0, sizeof(kbp->kp));
     kbp->kp.addr_type = SUBSYS_PROBE_TYPE(0,ADDR_KERNEL,ADDR_OF_CALL);
-    kbp->kp.on_entry = kamprobe_entry_handler_asm;
+	if (bpf_entry_prog) {
+        kbp->bpf_entry_prog = bpf_prog_inc(bpf_entry_prog);
+		kbp->kp.on_entry = kambpf_entry_handler_asm;
+    }
+	if (bpf_return_prog) {
+        kbp->bpf_return_prog = bpf_prog_inc(bpf_return_prog);
+		kbp->kp.on_return = kambpf_return_handler_asm;
+    }
     kbp->kp.tag_data = (void *) kbp;
     kbp->kp.addr = (u8*) instruction_address;
-    printk(KERN_INFO "Probbing with program %px\n",kbp->bpf_prog);
 
     err = kamprobe_register(&kbp->kp);
-    printk(KERN_INFO ": kamprobe return val %d\n",err);
-    if(err)
+    if(err) {
+        printk(KERN_INFO"Kamprobe register error: %d\n",err);
         goto err_bpf;
+    }
 
     return kbp;
 
 err_bpf:
-    bpf_prog_put(kbp->bpf_prog);
-err_kbp:
+    if (kbp->bpf_entry_prog)
+        bpf_prog_put(kbp->bpf_entry_prog);
+    if (kbp->bpf_return_prog)
+        bpf_prog_put(kbp->bpf_return_prog);
     kfree(kbp);
 err:
     return ERR_PTR(err);
 }
 
-struct kambpf_probe *kambpf_probe_alloc_fd(unsigned long instruction_address, u32 bpf_prog_fd) {
-	struct bpf_prog *prog = bpf_prog_get_type(bpf_prog_fd, BPF_PROG_TYPE_KPROBE); 
-    if (IS_ERR(prog)) {
-        return ERR_PTR(PTR_ERR(kbp->bpf_prog));
+struct kambpf_probe *kambpf_probe_alloc(unsigned long instruction_address, u32 bpf_entry_prog_fd,
+										u32 bpf_return_prog_fd) {
+	struct bpf_prog *entry_prog, *return_prog;
+	struct kambpf_probe *kbp;
+
+    printk("FDS %d %d\n",bpf_entry_prog_fd, bpf_return_prog_fd);
+    printk("Adding probe\n");
+	entry_prog = (bpf_entry_prog_fd != KAMBPF_PROBE_NOOP_FD) ?
+			bpf_prog_get_type(bpf_entry_prog_fd, BPF_PROG_TYPE_KPROBE) : NULL;
+    if (IS_ERR(entry_prog)) {
+        return ERR_PTR(PTR_ERR(entry_prog));
+    }
+	return_prog = (bpf_return_prog_fd != KAMBPF_PROBE_NOOP_FD) ?
+			bpf_prog_get_type(bpf_return_prog_fd, BPF_PROG_TYPE_KPROBE) : NULL;
+    if (IS_ERR(return_prog)) {
+        return ERR_PTR(PTR_ERR(return_prog));
     }
     
-    return kambpf_probe_alloc(instruction_address, prog);
+    kbp = kambpf_probe_alloc_aux(instruction_address, entry_prog, return_prog);
+
+    printk("Probe added\n");
+    if (entry_prog)
+        bpf_prog_put(entry_prog);
+    if (return_prog)
+        bpf_prog_put(return_prog);
+    return kbp;
 }
 
 void kambpf_probe_free(struct kambpf_probe *kbp) {
     kamprobe_unregister(&kbp->kp);
-    bpf_prog_put(kbp->bpf_prog);
+    if (kbp->bpf_entry_prog)
+        bpf_prog_put(kbp->bpf_entry_prog);
+    if (kbp->bpf_return_prog)
+        bpf_prog_put(kbp->bpf_return_prog);
     kfree(kbp);
 }

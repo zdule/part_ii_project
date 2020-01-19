@@ -99,16 +99,17 @@ void probe_table_cleanup(struct probe_table *table) {
 void probe_table_erase(struct probe_table *table, u32 index) {
     struct probe_table_entry *e;
 
+    printk("Table %px index %d\n",table, index);
     // acount for the header, which takes space from the first page
-    index += entries_per_header;
+    u32 virtual_index = index + entries_per_header;
 
-    e = table->pages[index/entries_per_page] + (index % entries_per_page);
-    
+    e = table->pages[virtual_index/entries_per_page] + (virtual_index % entries_per_page);
+
     // Address is zero iff the probe is inactive, no work to be done here.
     // Aditionally must not reinsert entry into the empty_entries list
     if (e->instruciton_address == 0) return;
 
-    // e->data is zero if this entry was test entry, data == bpf_prog == 0
+    // e->data is zero if this entry was test entry, data == kambpf_probe == 0
     if (e->data)
         kambpf_probe_free((struct kambpf_probe *) e->data);
     memset(e, 0, sizeof(struct probe_table_entry));
@@ -159,13 +160,21 @@ struct probe_table_entry *pop_empty_entry(struct probe_table * table) {
 }
 
 int probe_table_insert(struct probe_table *table, unsigned long address,
-                        u32 bpf_program_fd, u32 *index) {
+                        u32 bpf_program_fd, u32 bpf_return_program_fd, u32 *index) {
     int err = 0;
     struct kambpf_probe *kbp = 0;
     struct probe_table_entry *e;
 
-    if (bpf_program_fd != TEST_ENTRY_BPF_FD) {
-        kbp = kambpf_probe_alloc(address, bpf_program_fd); 
+	// These are different constants for the same thing, no program to run
+	// They are defined differently as one is an interface to kambpf_probe
+	// and the other one the interface to kambpf, hence the conversion code
+	// bellow.
+    if (bpf_program_fd != KAMBPF_NOOP_FD || bpf_return_program_fd != KAMBPF_NOOP_FD) {
+		if (bpf_program_fd == KAMBPF_NOOP_FD)
+			bpf_program_fd = KAMBPF_PROBE_NOOP_FD;
+		if (bpf_return_program_fd == KAMBPF_NOOP_FD)
+			bpf_return_program_fd = KAMBPF_PROBE_NOOP_FD;
+        kbp = kambpf_probe_alloc(address, bpf_program_fd, bpf_return_program_fd); 
         if (IS_ERR(kbp)) {
             err = PTR_ERR(kbp);
             goto err;
@@ -180,13 +189,6 @@ int probe_table_insert(struct probe_table *table, unsigned long address,
     *index = e->_ee.table_pos;
 
     e->data = kbp;
-    if (!kbp)  {
-        e->ebpf_program = 0;
-        e->call_destination = 0;
-    } else {
-        e->ebpf_program = kbp->bpf_prog;
-        e->call_destination = kbp->call_dest;
-    }
     e->instruciton_address = address;
 
     if (*index+1 > table->header->num_entries)
@@ -352,7 +354,7 @@ void process_update_entry(struct kambpf_update_entry *entry) {
         probe_table_erase(&list_dev.table, entry->table_pos);
     } else {
         probe_table_insert(&list_dev.table, entry->instruction_address, 
-                            entry->bpf_program_fd, &entry->table_pos);
+                            entry->bpf_program_fd, entry->bpf_return_program_fd, &entry->table_pos);
     }
 }
 
@@ -364,7 +366,6 @@ long process_updates(struct kambpf_update_buffer * update_buffer,
     unsigned long prefix_bytes = update_buffer_prefix(update_buffer); 
     size_t entry_width = sizeof(struct kambpf_update_entry);
 
-    printk(KERN_INFO MODULE_NAME ": hello from ioctl %lu!\n", updates_count);
     if (prefix_bytes / entry_width < updates_count)
         return -EINVAL;
     

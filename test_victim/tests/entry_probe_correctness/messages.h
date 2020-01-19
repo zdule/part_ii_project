@@ -23,6 +23,11 @@ struct entry_probe_correctness_message {
     __u64 stack_id; 
 };
 
+struct return_probe_correctness_message {
+    __u64 return_value; 
+    __u64 stack_id;
+};
+
 
 #ifdef __KERNEL__ 
     #undef __u64

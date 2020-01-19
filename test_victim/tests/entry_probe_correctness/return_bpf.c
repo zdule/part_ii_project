@@ -20,31 +20,22 @@ struct bpf_map_def SEC("maps") stacks = {
 	.max_entries = 2,
 };
 
-SEC("kprobe/")
+SEC("kprobe/prog")
 int prog(struct pt_regs *ctx)
 {
-    struct entry_probe_correctness_message message = {
-        .args = {
-            .arg1 = PT_REGS_PARM1(ctx),
-            .arg2 = PT_REGS_PARM2(ctx),
-            .arg3 = PT_REGS_PARM3(ctx),
-            .arg4 = PT_REGS_PARM4(ctx),
-            .arg5 = PT_REGS_PARM5(ctx),
-            .arg6 = 0L,
-            .arg7 = 0L,
-            .arg8 = 0L,
-        },
-        .stack_id = 0,
-    };
-    
-	//bpf_probe_read_kernel(&message.args.arg7, sizeof(message.args.arg7), (void *) ctx->rsp);
-    //bpf_probe_read_kernel(&message.args.arg8, sizeof(message.args.arg8), (void *) ctx->rsp+8);
+    struct return_probe_correctness_message message;
+    message.return_value = ctx->rax;
 
     message.stack_id = bpf_get_stackid(ctx, &stacks, BPF_F_FAST_STACK_CMP | BPF_F_REUSE_STACKID);
 
     bpf_perf_event_output(ctx, &perf_event, BPF_F_CURRENT_CPU, &message, sizeof(message));
 	
 	return 0;
+}
+
+SEC("kprobe/empty")
+int empty(struct pt_regs *ctx) {
+    return 0;
 }
 
 char _license[] SEC("license") = "GPL";

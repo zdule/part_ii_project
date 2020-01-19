@@ -18,7 +18,7 @@ struct bpf_object *load_obj_or_exit(char *path) {
 }
 
 struct bpf_program *find_program_by_name_or_exit(struct bpf_object *obj, char *name) {
-	struct bpf_program *prog = bpf_object__find_program_by_name(obj,"prog");
+	struct bpf_program *prog = bpf_object__find_program_by_name(obj, name);
 	if (!prog || libbpf_get_error(prog)) {
 		puts("Could not select program from file");
         exit(EXIT_FAILURE);

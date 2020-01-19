@@ -7,7 +7,7 @@
 #include <unistd.h> // getpagesize();
 
 #include <linux/bpf.h>
-#include "kambpf_user.h"
+#include "libkambpf/kambpf_user.h"
 
 const char list_dev[] = "/dev/kambpf_list";
 const char update_dev[] = "/dev/kambpf_update";
