@@ -57,6 +57,20 @@ Source of my kernel sans the ubuntu patches https://git.kernel.org/pub/scm/linux
 4.15.0-72.81 -> 4.15.18
 
 
+io_uring
+- 3 syscalls
+- io_uring_setup to create the uring
+	- it creates a kernel thread to process requests in io_sq_offload_start
+	- the entry point for the kernel thread is io_sq_thread
+	- this thread should also be woken up via a wait by the entry syscall
+	- io_sq_thread calls io_submit_sqes which calls io_submit_sqe which calls io_queue_sqe, then __io_queue_sqe, which finally 
+	  adds io_sq_wq_submit_work to the workqueue
+	- io_sq_wq_submit_work
+	- io_sq_wq_submit_work -> __io_submit_sqe -> io_read or io_write -> calls operation from fops on the file, eg. read_iter 
+	- finally io_rw_done call wich triggers completion on kiocb
+	- kiocb complete will call io_complete_rw
+	- this calls io_cqring_add_event which adds event to the completion queue
+
 void synchronize_rcu_tasks ( void);
 to free dynamic trampolines buffers :)
 https://www.youtube.com/watch?v=93uE_kWWQjs
