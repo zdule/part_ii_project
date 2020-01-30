@@ -1,0 +1,46 @@
+\documentclass[12pt, A4]{article}
+\usepackage[a4paper, margin=1in]{geometry}
+\usepackage[UKenglish]{isodate}
+\usepackage[UKenglish]{babel}
+\cleanlookdateon
+
+\title{Part II project report}
+\date{\today}
+
+\begin{document}
+    \centerline{\large Part II Project Progress Report}
+    \vspace{4mm}
+    \centerline{\Large Optimizing tracing instrumentation inside the Linux kernel}
+    \vspace{4mm}
+    \centerline{\large Dušan Živanović (dz308@cam.ac.uk)}
+    \vspace{4mm}
+    \centerline{\large \today}
+    \vspace{10mm}
+    
+    \hspace{-9mm}
+    \begin{tabular}{l l}
+        \bf{Supervisor:} & Dr Lucian Carata \\
+        \bf{Directors of Studies:} & Prof Frank Stajano, Dr Sean Holden \\
+        \bf{Overseers:} & Dr Sean Holden, Dr Andreas Vlachos \\
+    \end{tabular}
+
+    \section{Progress Made}
+        Since the start of the project I have:
+        \begin{itemize}
+            \item Familiarized myself with the kamprobes kernel module source code, and implemented the necessary changes needed to compile it with more recent versions of the kernel.
+            \item Read the Linux kernel source code related to kprobes and eBPF programs in order to understand the APIs used to invoke eBPF programs and give them access to function argument and stack traces.
+            \item Implemented the callback functions/event handlers that call eBPF programs, both for when a function call is made, and when the function returns.
+            \item Written a memory-mapped user interface between the module and the user land.
+            \item Written a simple C library to use the memory-mapped interface.
+            \item Written automated end-to-end tests programs.
+            \item Written a draft of the Introduction chapter of the dissertation, and a very early draft of the preparation chapter.
+        \end{itemize}
+
+        Additionally, I have agreed with my supervisor on which waiting in the Linux kernel to measure as a demonstration of the new tracing system. This wasn't specified precisely in the original proposal. We have chosen to measure the amount of time an IO request spends in a work queue when using the new asynchronous IO API -- io\_uring. In preparation to measuring the latency I have familiarised myself with the io\_uring code.
+
+    \section{Difficulties}
+        I have not encountered any major difficulties so far. The biggest risk facing the project, which was that I wouldn't be able to implement the kernel module functionality, did not materialise itself. The project didn't require any modifications to the kernel source code outside of my module, which could have been a difficulty and was thankfully avoided.
+
+    \section{Schedule Changes}
+        The project is going according to the schedule detailed in the project proposal. The only deviation from the schedule is that I have begun collecting performance data, and I am not done yet as the schedule predicts for the end of the second week of Lent. This isn't a big issue the proposal allows for three weeks at the end of Lent to catch up with delayed work, and I am sure that I will manage.  
+\end{document}
