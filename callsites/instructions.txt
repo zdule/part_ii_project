@@ -1,0 +1,7 @@
+Instructions for getting the call sites on ubuntu
+
+Get the extract_vmlinux script from /usr/src/<kernel_version>/scripts/extract_vmlinux
+Get the vmlinuz-<kernel_version> and System.map-<kernel_version> files from /boot
+
+Install pyelftools with pip3 install pyelftools
+Install capstone with pip3 install capstone

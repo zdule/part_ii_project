@@ -1,0 +1,5 @@
+System.map*
+vmlinux
+vmlinuz*
+calls
+extract-vmlinux

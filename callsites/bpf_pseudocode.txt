@@ -1,0 +1,46 @@
+
+Initial (kprobe):
+    if (reccnt == 0)
+        token = 1
+    if (!token)
+        return DONOT_RETPROBE
+    reccnt++
+    send(triggered <fn>)
+    // The initial function will always be probed
+    //if !probed(<fn>)
+    //   token = 0
+
+initial (kretprobe):
+    reccnt--
+    send(return)
+    token = 1
+    if reccnt == 0
+        token = 0
+
+entry (kamprobe)
+    if !token
+        return DONOTPROBE
+    send(triggered: <target>)
+    if !probed(<target>)
+        token = 0
+
+return (kamretprobe)
+    token = 1
+    send(return)
+
+indirect jump (kprobe)
+    if !token
+        return DONOTPROBE
+    send(triggered: <reg>)
+    if !probed(<reg>)
+        token = 0
+
+indirect jump (kprobe)
+    token = 1
+    send return
+
+
+    
+
+         
+        
