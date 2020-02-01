@@ -23,7 +23,6 @@ clean:
 	make -C /lib/modules/$(shell uname -r)/build M=$B src=$(PWD) clean
 	rm -rf $B/tests
 
-
 objs += $B/ksyms/ksyms.o
 
 userland := $B/tests/entry_probe_correctness/userland
@@ -52,9 +51,9 @@ $(bpf_objects): $B/%.o: $S/%.c
 	 -c $< -o - | llc -march=bpf -filetype=obj -o $@
 
 deps := $(objs:.o=.d)
-deps += $(bpf_objects:.o=.d)
+#deps += $(bpf_objects:.o=.d)
 
-$(deps): $B/%.d: $S/%.c
+$(deps): $B/%.d: $S/%.c 
 	gcc -MM $< -MT '$(<:$S/%.c=$B/%.o) $@' -MF $@ 
 
 .SECONDEXPANSION:
@@ -64,6 +63,7 @@ $(progs): %: $$($$@-objs) $$($$@-libs)
 targets := $(objs)
 targets += $(bpf_objects)
 targets += $(progs) 
+targets += $(deps)
 
 .SECONDEXPANSION:
 $(targets): %: | $$(@D)/.

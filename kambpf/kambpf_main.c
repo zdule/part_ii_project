@@ -209,7 +209,7 @@ err:
 void kambpf_list_dev_vma_open(struct vm_area_struct *vma) {}
 void kambpf_list_dev_vma_close(struct vm_area_struct *vma) {}
 
-int kambpf_list_dev_vma_fault(struct vm_fault *fault) {
+vm_fault_t kambpf_list_dev_vma_fault(struct vm_fault *fault) {
     struct probe_table *table = (struct probe_table*) fault->vma->vm_private_data;
     struct page *page;
     if (fault->pgoff > table->num_pages)
@@ -384,7 +384,7 @@ long process_updates(struct kambpf_update_buffer * update_buffer,
 
 // ======================= kambpf_update_dev_fops ==============================
 
-int kambpf_update_dev_fault(struct vm_fault *fault) {
+vm_fault_t kambpf_update_dev_fault(struct vm_fault *fault) {
     struct kambpf_update_buffer *buffer_pages = 
         (struct kambpf_update_buffer *) fault->vma->vm_private_data;
 
