@@ -79,23 +79,23 @@ err:
 }
 
 struct kambpf_probe *kambpf_probe_alloc(unsigned long instruction_address, u32 bpf_entry_prog_fd,
-										u32 bpf_return_prog_fd) {
-	struct bpf_prog *entry_prog, *return_prog;
-	struct kambpf_probe *kbp;
+                                        u32 bpf_return_prog_fd) {
+    struct bpf_prog *entry_prog, *return_prog;
+    struct kambpf_probe *kbp;
 
     printk("FDS %d %d\n",bpf_entry_prog_fd, bpf_return_prog_fd);
     printk("Adding probe\n");
-	entry_prog = (bpf_entry_prog_fd != KAMBPF_PROBE_NOOP_FD) ?
-			bpf_prog_get_type(bpf_entry_prog_fd, BPF_PROG_TYPE_KPROBE) : NULL;
+    entry_prog = (bpf_entry_prog_fd != KAMBPF_PROBE_NOOP_FD) ?
+                  bpf_prog_get_type(bpf_entry_prog_fd, BPF_PROG_TYPE_KPROBE) : NULL;
     if (IS_ERR(entry_prog)) {
         return ERR_PTR(PTR_ERR(entry_prog));
     }
-	return_prog = (bpf_return_prog_fd != KAMBPF_PROBE_NOOP_FD) ?
-			bpf_prog_get_type(bpf_return_prog_fd, BPF_PROG_TYPE_KPROBE) : NULL;
+    return_prog = (bpf_return_prog_fd != KAMBPF_PROBE_NOOP_FD) ?
+                  bpf_prog_get_type(bpf_return_prog_fd, BPF_PROG_TYPE_KPROBE) : NULL;
     if (IS_ERR(return_prog)) {
         return ERR_PTR(PTR_ERR(return_prog));
     }
-    
+
     kbp = kambpf_probe_alloc_aux(instruction_address, entry_prog, return_prog);
 
     printk("Probe added\n");

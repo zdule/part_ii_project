@@ -4,3 +4,9 @@
 [submodule "test_victim/libkambpf"]
 	path = test_victim/libkambpf
 	url = git@github.com:zdule/libkambpf.git
+[submodule "kamprobes"]
+	path = kamprobes
+	url = git@github.com:zdule/kamprobes.git
+[submodule "libkambpf"]
+	path = libkambpf
+	url = git@github.com:zdule/libkambpf.git

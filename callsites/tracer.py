@@ -9,6 +9,9 @@ asm_volatile_goto_workarround = """
 """
 bpf_header = asm_volatile_goto_workarround + """
 #include <uapi/linux/ptrace.h>
+//BPF_TABLE_SHARED("hash", u32, u8, rec_count, 1000);
+//BPF_TABLE_SHARED("hash", u32, u8, relay, 1000);
+//BPF_TABLE_SHARED("hash", u64, u8, probed, 10000);
 BPF_HASH(rec_count, u32, u8, 1000);
 BPF_HASH(relay, u32, u8, 1000);
 BPF_HASH(probed, u64, u8, 10000);
@@ -18,7 +21,7 @@ struct msg  {
     u64 addr;
     u64 nano;
     u32 tid;
-    bool entry;
+    u32 entry;
 };
 """
 
@@ -27,6 +30,7 @@ int initial_entry(struct pt_regs *ctx) {
     u32 tid = bpf_get_current_pid_tgid();
     u8 zero = 0;
     u64 addr = (u64) ctx->ip;
+    bpf_trace_printk("Initial entry %d\\n",tid);
 
     u8 *rc = rec_count.lookup(&tid);
     if (rc == NULL) {
@@ -35,7 +39,6 @@ int initial_entry(struct pt_regs *ctx) {
         if (rc == NULL) return 1;
     }
 
-
     u8 *rel = relay.lookup(&tid);
     if (rel == NULL) {
         relay.insert(&tid,&zero);
@@ -43,16 +46,16 @@ int initial_entry(struct pt_regs *ctx) {
         if (rel == NULL) return 1;
     }
 
-    if (*rc == 0)
+    //if (*rc == 0)
         *rel = 1;
     if (*rel == 0)
         return 1;
-    *rc++;
+    (*rc)++;
 
-    u8 *prob = probed.lookup(&addr);
-    if (!prob)
-        *rel = 0;
-    
+    //u8 *prob = probed.lookup(&addr);
+    //if (!prob)
+    //    *rel = 0;
+
     struct msg m = {
         .addr = addr,
         .nano = bpf_ktime_get_ns(),
@@ -68,21 +71,10 @@ void initial_return(struct pt_regs *ctx) {
 
     u8 *rc = rec_count.lookup(&tid);
     u8 *rel = relay.lookup(&tid);
-    if (rel == NULL || rc == NULL) {
+    if (rel == NULL || rc == NULL) 
         return;
-        //relay.insert(&tid,&zero);
-        //rel = relay.lookup(&tid);
-        //if (rel == NULL) return;
-    }
 
-    /*
-    if (!rc) {
-        *rel = 0;
-        return;
-    }
-    */
-
-    *rc--;
+    (*rc)--;
 
     struct msg m = {
         .addr = (u64) ctx->ip,
@@ -94,7 +86,7 @@ void initial_return(struct pt_regs *ctx) {
     
     *rel = 1;
     if (*rc == 0) {
-        *rel = 0; 
+        //*rel = 0; 
     }
 }
 """
@@ -112,15 +104,17 @@ int non_initial_{REG}(struct pt_regs *ctx) {
     u8 *rel = relay.lookup(&tid);
     if (!rel || *rel == 0) return 1;
 
-    u8 *prob = probed.lookup(&ctx->{REG});
+    u64 target = (u64) ctx->{REG};
+
+    u8 *prob = probed.lookup(&target);
     if (!prob)
         *rel = 0;
 
     struct msg m = {
-        addr = ctx->{REG},
-        nano = bpf_ktime_get_ns(),
-        tid = tid,
-        entry = true,
+        .addr = target,
+        .nano = bpf_ktime_get_ns(),
+        .tid = tid,
+        .entry = true,
     };
     return pipe.perf_submit(ctx, &m, sizeof(m));
 }
@@ -132,13 +126,68 @@ void non_initial_{REG}_return(struct pt_regs *ctx) {
     if (!rel) {
         return;
     }
-    *rel = 1
+    *rel = 1;
 
     struct msg m = {
-        addr = ctx->{REG},
-        nano = bpf_ktime_get_ns(),
-        tid = tid,
-        entry = false,
+        .addr = (u64) ctx->{REG},
+        .nano = bpf_ktime_get_ns(),
+        .tid = tid,
+        .entry = false,
+    };
+    pipe.perf_submit(ctx, &m, sizeof(m));
+}
+"""
+non_initial_callq = """
+int non_initial_callq(struct pt_regs *ctx) {
+    u32 tid = bpf_get_current_pid_tgid();
+    bpf_trace_printk("Initial callq %d\\n",tid);
+
+    u8 *rel = relay.lookup(&tid);
+    if (!rel) return 1;
+    if (*rel == 0)
+        return 1;
+    bpf_trace_printk("triggered mwprobe\\n");
+
+    u32 offset = 0;
+    u64 target = (u64) ctx->ip;
+    if (bpf_probe_read(&offset, 4, (u64*)(ctx->ip+1)) != 0)
+        return 1;
+    target += offset;
+    bpf_trace_printk("triggered mfprobe\\n");
+    u8 *prob = probed.lookup(&target);
+    if (!prob)
+        *rel = 0;
+
+    bpf_trace_printk("triggered maprobe\\n");
+    struct msg m = {
+        .addr = target,
+        .nano = bpf_ktime_get_ns(),
+        .tid = tid,
+        .entry = true,
+    };
+    return pipe.perf_submit(ctx, &m, sizeof(m));
+}
+
+void non_initial_callq_return(struct pt_regs *ctx) {
+    u32 tid = bpf_get_current_pid_tgid();
+
+    u8 *rel = relay.lookup(&tid);
+    if (!rel) {
+        return;
+    }
+    *rel = 1;
+
+    u32 offset = 0;
+    u64 target = (u64) ctx->ip;
+    if (bpf_probe_read(&offset, 4, (u64*)(ctx->ip+1)) != 0)
+        return;
+    target += offset;
+
+    struct msg m = {
+        .addr = target,
+        .nano = bpf_ktime_get_ns(),
+        .tid = tid,
+        .entry = false,
     };
     pipe.perf_submit(ctx, &m, sizeof(m));
 }
@@ -152,7 +201,7 @@ regs_thunks = ["__x86_indirect_thunk_"+reg for reg in regs_long]
 
 prog_texts = [non_initial_entry.replace("{REG}",reg) for reg in regs]
 
-prog_text = bpf_header + initial_entry #+ "".join(prog_texts)
+prog_text = bpf_header + initial_entry + "".join(prog_texts) + non_initial_callq 
 #print(prog_text)
 
 calls_file = 'calls'
@@ -194,70 +243,84 @@ def init_call_graph():
 
 # graph maps funciton addresses to lists of (call_address, target)
 # thunks maps addresses of spectre mitigation retpolines to registers they use
+print("hi")
 graph, thunks = init_call_graph()
 
+print("hi")
 b = BPF(text=prog_text)
+b.load_funcs()
+print("hi load")
 
 def trace_function(address, queue):
+    if address not in graph:
+        print(f"Address not found in graph {address:x}")
+        return
     calls = graph[address]
     for (call_addr, target) in calls:
         if target in thunks:
-            queue.append(call_addr, b.funcs[f"non_initial_{thunks[call_addr]}"].fd, funcs[f"non_initial_{thunks[call_addr]}_return"].fd)
+            queue.append((call_addr, b.funcs[f"non_initial_{thunks[call_addr]}"].fd, b.funcs[f"non_initial_{thunks[call_addr]}_return"].fd))
         else:
-            queue.append(call_addr, b.funcs["non_initial_r11"].fd, funcs["non_initial_r11_return"].fd)
+            queue.append((call_addr, b.funcs["non_initial_r11"].fd, b.funcs["non_initial_r11_return"].fd))
 
-traced_functions = {}
+traced_functions = set()
 queue = []
 indent = 0
 pipe = b['pipe']
 probed = b['probed']
 
+import ctypes as ct
+class Message(ct.Structure):
+    _fields_ = [("addr", ct.c_uint64),
+                ("nano", ct.c_uint64),
+                ("tid", ct.c_uint32),
+                ("entry",ct.c_uint32),]
 
 def process_message(cpu, data, size):
-    message = pipe.event(data)
-    print(" "*indent+b.ksym(message.addr))
+    global indent
+    message = ct.cast(data, ct.POINTER(Message)).contents
+    print(" "*indent+b.ksym(message.addr) + f"{message.addr:x}")
+    if message.entry > 0:
+        indent += 1
+    else:
+        indent -= 1
     if message.addr not in traced_functions:
+        print(f"processin {message.addr:x}")
         queue.append(message.addr)
-        traced_functions.insert(message.addr)
+        traced_functions.add(message.addr)
 
 pipe.open_perf_buffer(process_message)
-b.attach_kretprobe(event="",fn_name="initial_return")
-b.attach_kprobe(event="",fn_name="initial_entry")
+entry_point = "__x64_sys_io_uring_enter"
+b.attach_kretprobe(event=entry_point,fn_name="initial_return")
+b.attach_kprobe(event=entry_point,fn_name="initial_entry")
 
-import ctypes
-class UpdatesBuffer:
-    lib = ctypes.CDLL("libkambpf.dll")
-    def __init__(self, path):
-        self._ptr = lib.kambpf_open_updates_device(path)
-        self.probes = []
-    def __del__(self):
-        self.clear_probes()
-        lib.kambpf_free_updates_buffer(self._ptr)
-    def add_probes(self, probes):
-        for i,probe in enumerate(probes):
-            lib.kambpf_updates_set_entry(self._ptr, i, probe[0], probe[1], probe[2])
-        lib.kambpf_submit_updates(self._ptr)
-        for i in range(len(probes)):
-            self.probes.append(lib.kambpf_updates_get_id(self._ptr, i))
-    def clear_probes(self):
-        for i, probe in enumerate(self.probes):
-            lib.kambpf_updates_set_entry_remove(self._ptr, i, probe)
-        self.probes = []
+from libkambpf import UpdatesBuffer
 
-ub = UpdatesBuffer("/dev/kambpf_updates")
+ub = UpdatesBuffer(b"/dev/kambpf_update")
 def add_probes(probes):
     ub.add_probes(probes)
     for p in probes:
-        probed[p[0]] = 1
+        probed[ct.c_uint64(p[0])] = ct.c_uint8(1)
 
+print("hi")
+q123 = []
+trace_function(b.ksymname(entry_point),q123)
+print(graph[b.ksymname(entry_point)])
+print(q123)
+add_probes(q123)
+probed[ct.c_uint64(b.ksymname(entry_point))] = ct.c_uint8(1)
+probed[ct.c_uint64(b.ksymname(entry_point)+1)] = ct.c_uint8(1)
+
+print(ub.probes)
 try:
     while True:
-        b.perf_buffer_poll(100)
+        b.kprobe_poll(100)
         new_probes = []
-        for addr in queue:
-            trace_function(addr, new_probes)
-        add_probes(new_probes)
-except KeyboardInterrupt:
+#for addr in queue:
+#trace_function(addr, new_probes)
+#add_probes(new_probes)
+except:
+    print('exiting')
+    ub.clear_probes()
     ub = None
     exit()
 

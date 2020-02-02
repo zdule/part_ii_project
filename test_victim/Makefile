@@ -73,7 +73,10 @@ $B/.:
 $B/%/.:
 	mkdir -p $@
 
-all: $(targets)
+all: $(targets) $B/Makefile
 	make -C /lib/modules/$(shell uname -r)/build M=$B src=$(PWD) modules
+
+$B/Makefile:
+	touch $@
 
 include $(deps)

@@ -165,15 +165,15 @@ int probe_table_insert(struct probe_table *table, unsigned long address,
     struct kambpf_probe *kbp = 0;
     struct probe_table_entry *e;
 
-	// These are different constants for the same thing, no program to run
-	// They are defined differently as one is an interface to kambpf_probe
-	// and the other one the interface to kambpf, hence the conversion code
-	// bellow.
+    // These are different constants for the same thing, no program to run
+    // They are defined differently as one is an interface to kambpf_probe
+    // and the other one the interface to kambpf, hence the conversion code
+    // bellow.
     if (bpf_program_fd != KAMBPF_NOOP_FD || bpf_return_program_fd != KAMBPF_NOOP_FD) {
-		if (bpf_program_fd == KAMBPF_NOOP_FD)
-			bpf_program_fd = KAMBPF_PROBE_NOOP_FD;
-		if (bpf_return_program_fd == KAMBPF_NOOP_FD)
-			bpf_return_program_fd = KAMBPF_PROBE_NOOP_FD;
+        if (bpf_program_fd == KAMBPF_NOOP_FD)
+            bpf_program_fd = KAMBPF_PROBE_NOOP_FD;
+        if (bpf_return_program_fd == KAMBPF_NOOP_FD)
+            bpf_return_program_fd = KAMBPF_PROBE_NOOP_FD;
         kbp = kambpf_probe_alloc(address, bpf_program_fd, bpf_return_program_fd); 
         if (IS_ERR(kbp)) {
             err = PTR_ERR(kbp);
@@ -353,8 +353,11 @@ void process_update_entry(struct kambpf_update_entry *entry) {
     if (entry->instruction_address == 0) {
         probe_table_erase(&list_dev.table, entry->table_pos);
     } else {
+        u32 index;
+        printk("FDS %d %d\n",entry->bpf_program_fd , entry->bpf_return_program_fd);
         probe_table_insert(&list_dev.table, entry->instruction_address, 
-                            entry->bpf_program_fd, entry->bpf_return_program_fd, &entry->table_pos);
+                            entry->bpf_program_fd, entry->bpf_return_program_fd, &index);
+        entry->table_pos = index;
     }
 }
 
