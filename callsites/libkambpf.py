@@ -1,4 +1,6 @@
 import ctypes as ct
+
+UPDATE_DEVICE_PATH = b"/dev/kambpf_update"
 class KambpfListHeader(ct.Structure):
     _fields_ = [
         ("num_entries", ct.c_uint64),
@@ -55,9 +57,9 @@ class KambpfList:
         return sol
 
 class UpdatesBuffer:
-    def __init__(self, path):
-        self._ptr = Libkambpf.open_updates_device(path, 10000)
+    def __init__(self, path = UPDATE_DEVICE_PATH):
         self.probes = []
+        self._ptr = Libkambpf.open_updates_device(ct.c_char_p(path), 10000)
     def __del__(self):
         self.clear_probes()
         Libkambpf.free_updates_buffer(self._ptr)

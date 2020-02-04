@@ -1,0 +1,89 @@
+ 0)               |  __x64_sys_io_uring_enter() {
+ 0)               |    __fdget() {
+ 0)   0.475 us    |      __fget_light();
+ 0)   1.383 us    |    }
+ 0)               |    mutex_lock() {
+ 0)               |      _cond_resched() {
+ 0)   0.444 us    |        rcu_all_qs();
+ 0)   1.336 us    |      }
+ 0)   2.178 us    |    }
+ 0)               |    io_ring_submit() {
+ 0)   0.449 us    |      io_get_sqring();
+ 0)               |      io_submit_sqe() {
+ 0)               |        kmem_cache_alloc() {
+ 0)               |          _cond_resched() {
+ 0)   0.433 us    |            rcu_all_qs();
+ 0)   1.285 us    |          }
+ 0)   0.428 us    |          should_failslab();
+ 0)   3.095 us    |        }
+ 0)               |        fget() {
+ 0)   0.435 us    |          __fget();
+ 0)   1.275 us    |        }
+ 0)               |        io_queue_sqe() {
+ 0)               |          __io_submit_sqe() {
+ 0)               |            io_read() {
+ 0)   0.498 us    |              io_prep_rw();
+ 0)               |              io_import_iovec.isra.27() {
+ 0)               |                rw_copy_check_uvector() {
+ 0)               |                  __check_object_size() {
+ 0)   0.470 us    |                    check_stack_object();
+ 0)   1.336 us    |                  }
+ 0)   2.286 us    |                }
+ 0)   3.178 us    |              }
+ 0)               |              rw_verify_area() {
+ 0)               |                security_file_permission() {
+ 0)               |                  apparmor_file_permission() {
+ 0)   0.900 us    |                    common_file_perm();
+ 0)   1.742 us    |                  }
+ 0)   0.447 us    |                  __fsnotify_parent();
+ 0)   0.784 us    |                  fsnotify();
+ 0)   5.229 us    |                }
+ 0)   6.085 us    |              }
+ 0)               |              ext4_file_read_iter() {
+ 0)               |                generic_file_read_iter() {
+ 0)               |                  _cond_resched() {
+ 0)   0.434 us    |                    rcu_all_qs();
+ 0)   1.276 us    |                  }
+ 0)               |                  pagecache_get_page() {
+ 0)   0.564 us    |                    find_get_entry();
+ 0)   1.446 us    |                  }
+ 0)               |                  touch_atime() {
+ 0)   1.118 us    |                    atime_needs_update();
+ 0)   1.979 us    |                  }
+ 0)   6.667 us    |                }
+ 0)   7.672 us    |              }
+ 0)   0.460 us    |              io_async_list_note();
+ 0)   0.444 us    |              kfree();
+ 0) + 21.429 us   |            }
+ 0) + 22.327 us   |          }
+ 0)               |          kmem_cache_alloc_trace() {
+ 0)               |            _cond_resched() {
+ 0)   0.440 us    |              rcu_all_qs();
+ 0)   1.281 us    |            }
+ 0)   0.430 us    |            should_failslab();
+ 0)   3.014 us    |          }
+ 0)               |          queue_work_on() {
+ 0)               |            __queue_work() {
+ 0)   0.431 us    |              get_work_pool();
+ 0)   0.436 us    |              _raw_spin_lock();
+ 0)               |              insert_work() {
+ 0)   0.436 us    |                get_pwq.isra.24();
+ 0)               |                wake_up_process() {
+ 0)               |                  try_to_wake_up() {
+ 0)   0.489 us    |                    _raw_spin_lock_irqsave();
+ 0)   0.462 us    |                    _raw_spin_lock();
+ 0)   0.548 us    |                    update_rq_clock();
+ 0)   5.256 us    |                    ttwu_do_activate();
+ 0)   0.498 us    |                    _raw_spin_unlock_irqrestore();
+ 0)   9.971 us    |                  }
+ 0) + 10.860 us   |                }
+ 0) + 12.633 us   |              }
+ 0) + 15.320 us   |            }
+ 0) + 16.180 us   |          }
+ 0) + 43.306 us   |        }
+ 0) + 50.194 us   |      }
+ 0) + 52.065 us   |    }
+ 0)   0.440 us    |    mutex_unlock();
+ 0)   0.480 us    |    io_cqring_wait();
+ 0)   0.448 us    |    io_ring_drop_ctx_refs();
+ 0) + 60.132 us   |  }

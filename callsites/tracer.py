@@ -137,61 +137,6 @@ void non_initial_{REG}_return(struct pt_regs *ctx) {
     pipe.perf_submit(ctx, &m, sizeof(m));
 }
 """
-non_initial_callq = """
-int non_initial_callq(struct pt_regs *ctx) {
-    u32 tid = bpf_get_current_pid_tgid();
-    bpf_trace_printk("Initial callq %d\\n",tid);
-
-    u8 *rel = relay.lookup(&tid);
-    if (!rel) return 1;
-    if (*rel == 0)
-        return 1;
-    bpf_trace_printk("triggered mwprobe\\n");
-
-    u32 offset = 0;
-    u64 target = (u64) ctx->ip;
-    if (bpf_probe_read(&offset, 4, (u64*)(ctx->ip+1)) != 0)
-        return 1;
-    target += offset;
-    bpf_trace_printk("triggered mfprobe\\n");
-    u8 *prob = probed.lookup(&target);
-    if (!prob)
-        *rel = 0;
-
-    bpf_trace_printk("triggered maprobe\\n");
-    struct msg m = {
-        .addr = target,
-        .nano = bpf_ktime_get_ns(),
-        .tid = tid,
-        .entry = true,
-    };
-    return pipe.perf_submit(ctx, &m, sizeof(m));
-}
-
-void non_initial_callq_return(struct pt_regs *ctx) {
-    u32 tid = bpf_get_current_pid_tgid();
-
-    u8 *rel = relay.lookup(&tid);
-    if (!rel) {
-        return;
-    }
-    *rel = 1;
-
-    u32 offset = 0;
-    u64 target = (u64) ctx->ip;
-    if (bpf_probe_read(&offset, 4, (u64*)(ctx->ip+1)) != 0)
-        return;
-    target += offset;
-
-    struct msg m = {
-        .addr = target,
-        .nano = bpf_ktime_get_ns(),
-        .tid = tid,
-        .entry = false,
-    };
-    pipe.perf_submit(ctx, &m, sizeof(m));
-}
-"""
 
 regs = ['ax','bx','cx','dx','si','di','bp','r8','r9','r10','r11','r12','r13','r14','r15']
 
