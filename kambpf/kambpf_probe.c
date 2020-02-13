@@ -27,6 +27,13 @@ unsigned long callq_target(unsigned long addr) {
     return *((int *) (addr+1)) + 5 + addr;
 }
 
+void free_prog(struct bpf_prog **prog) {
+    printk(KERN_INFO"Putting bpf_prog %px\n", *prog);
+    bpf_prog_put(*prog);
+    printk(KERN_INFO"DONE\n");
+    *prog = NULL;
+}
+
 struct kambpf_probe *kambpf_probe_alloc_aux(unsigned long instruction_address, struct bpf_prog *bpf_entry_prog,
 											struct bpf_prog *bpf_return_prog) {
     struct kambpf_probe *kbp;
@@ -69,10 +76,12 @@ struct kambpf_probe *kambpf_probe_alloc_aux(unsigned long instruction_address, s
     return kbp;
 
 err_bpf:
-    if (kbp->bpf_entry_prog)
-        bpf_prog_put(kbp->bpf_entry_prog);
-    if (kbp->bpf_return_prog)
-        bpf_prog_put(kbp->bpf_return_prog);
+    if (kbp->bpf_entry_prog) {
+        free_prog(&kbp->bpf_entry_prog);
+    }
+    if (kbp->bpf_return_prog) {
+        free_prog(&kbp->bpf_return_prog);
+    }
     kfree(kbp);
 err:
     return ERR_PTR(err);
@@ -89,32 +98,34 @@ struct kambpf_probe *kambpf_probe_alloc(unsigned long instruction_address, u32 b
                   bpf_prog_get_type(bpf_entry_prog_fd, BPF_PROG_TYPE_KPROBE) : NULL;
     if (IS_ERR(entry_prog)) {
         kbp = ERR_PTR(PTR_ERR(entry_prog));
+        entry_prog = NULL;
         goto err;
     }
     return_prog = (bpf_return_prog_fd != KAMBPF_PROBE_NOOP_FD) ?
                   bpf_prog_get_type(bpf_return_prog_fd, BPF_PROG_TYPE_KPROBE) : NULL;
     if (IS_ERR(return_prog)) {
         kbp = ERR_PTR(PTR_ERR(return_prog));
+        return_prog = NULL;
         goto err;
     }
 
     kbp = kambpf_probe_alloc_aux(instruction_address, entry_prog, return_prog);
 
-    printk("Probe added\n");
-
+    printk("Probe added %px %px\n", kbp->bpf_entry_prog, kbp->bpf_return_prog);
+    return kbp;
 err:
     if (entry_prog)
-        bpf_prog_put(entry_prog);
+        free_prog(&entry_prog);
     if (return_prog)
-        bpf_prog_put(return_prog);
+        free_prog(&return_prog);
     return kbp;
 }
 
 void kambpf_probe_free(struct kambpf_probe *kbp) {
     kamprobe_unregister(&kbp->kp);
     if (kbp->bpf_entry_prog)
-        bpf_prog_put(kbp->bpf_entry_prog);
+        free_prog(&kbp->bpf_entry_prog);
     if (kbp->bpf_return_prog)
-        bpf_prog_put(kbp->bpf_return_prog);
+        free_prog(&kbp->bpf_return_prog);
     kfree(kbp);
 }

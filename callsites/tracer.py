@@ -9,9 +9,6 @@ asm_volatile_goto_workarround = """
 """
 bpf_header = asm_volatile_goto_workarround + """
 #include <uapi/linux/ptrace.h>
-//BPF_TABLE_SHARED("hash", u32, u8, rec_count, 1000);
-//BPF_TABLE_SHARED("hash", u32, u8, relay, 1000);
-//BPF_TABLE_SHARED("hash", u64, u8, probed, 10000);
 BPF_HASH(rec_count, u32, u8, 1000);
 BPF_HASH(relay, u32, u8, 1000);
 BPF_HASH(probed, u64, u8, 10000);
@@ -149,42 +146,6 @@ prog_texts = [non_initial_entry.replace("{REG}",reg) for reg in regs]
 prog_text = bpf_header + initial_entry + "".join(prog_texts) + non_initial_callq 
 #print(prog_text)
 
-calls_file = 'calls'
-kallsyms_file = '/proc/kallsyms'
-syms_file = 'System.map-5.3.0-26-generic'
-from bisect import bisect
-def init_call_graph():
-    kallsyms = {}
-    syms = []
-    graph = {}
-    thunks = {}
-    with open(kallsyms_file, 'r') as kf:
-        for l in kf.readlines():
-            tok = l.split()
-            if tok[1] in ['t','T']:
-                kallsyms[tok[2]] = int(tok[0],16)
-    with open(syms_file, 'r') as sf:
-        for l in sf.readlines():
-            tok = l.split()
-            if tok[1] in ['t','T']:
-                syms.append((int(tok[0],16),tok[2]))
-    with open(calls_file, 'r') as cf:
-        for l in cf.readlines():
-            tok = l.split()
-            addr = int(tok[0],16)
-            target = int(tok[1],16)
-            fun_id = bisect(syms,(addr,''))-1
-            fun_addr = syms[fun_id][0]
-            fun_name = syms[fun_id][1]
-            runtime_fun = kallsyms[fun_name]
-            runtime_addr = addr-fun_addr + runtime_fun
-            runtime_target = kallsyms[syms[bisect(syms,(addr,''))-1][1]]
-            if runtime_fun not in graph:
-                graph[runtime_fun] = []
-            graph[runtime_fun].append((runtime_addr, runtime_target))
-    for i, reg in enumerate(regs):
-        thunks[kallsyms["__x86_indirect_thunk_"+regs_long[i]]] = reg
-    return graph, thunks
 
 # graph maps funciton addresses to lists of (call_address, target)
 # thunks maps addresses of spectre mitigation retpolines to registers they use

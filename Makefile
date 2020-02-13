@@ -1,5 +1,6 @@
 .PHONY : all kamprobes kambpf test_victim test_victim_load  test_victim_unload \
-		 kambpf_load kambpf_unload  kamprobes_load kamprobes_unload libkambpf
+		 kambpf_load kambpf_unload  kamprobes_load kamprobes_unload libkambpf \
+		 kambpf_reload
 
 all: kamprobes kambpf test_victim libkambpf
 
@@ -31,6 +32,8 @@ kambpf_load: kamprobes_load kambpf
 kambpf_unload: test_victim_unload
 	cd kambpf && sudo ./kambpf_reload.sh unload
 
+kambpf_reload: kambpf_unload kambpf_load
+
 test_victim_load: kambpf_load test_victim
 	cd test_victim && sudo ./test_victim_reload.sh load
 
@@ -40,8 +43,9 @@ test_victim_unload:
 run_tests: test_victim_unload test_victim_load
 	cd test_victim && ./run_tests.sh
 
-run_tracer: libkambpf kambpf_unload kambpf_load
+run_tracer: libkambpf kambpf_reload
 	cd callsites && sudo python3 tracer.py
+
 just_tracer:
 	cd callsites && sudo python3 tracer.py
 
