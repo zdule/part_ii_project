@@ -40,7 +40,7 @@ test_victim_load: kambpf_load test_victim
 test_victim_unload:
 	cd test_victim && sudo ./test_victim_reload.sh unload
 
-run_tests: test_victim_unload test_victim_load
+run_tests: kamprobes_unload test_victim_load
 	cd test_victim && ./run_tests.sh
 
 run_tracer: libkambpf kambpf_reload

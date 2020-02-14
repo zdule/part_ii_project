@@ -74,3 +74,11 @@ io_uring
 void synchronize_rcu_tasks ( void);
 to free dynamic trampolines buffers :)
 https://www.youtube.com/watch?v=93uE_kWWQjs
+
+
+[ 1289.621929] Entry prog ffff99af8002d000
+[ 1289.640903] Entry prog ffff8accb51c2400
+[ 1289.640911] Caught entry program func becoming 0
+[ 1289.640992] Entry prog ffff99af8002b000
+[ 1289.641015] Entry prog ffff99af8002d000
+[ 1289.641058] Entry prog ffff99af80303000

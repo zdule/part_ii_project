@@ -13,7 +13,15 @@ int kambpf_return_handler_asm(void);
 
 u64 kambpf_entry_handler(struct kambpf_probe *kbp, struct pt_regs *regs) {
     printk("Entry prog %px\n", kbp->bpf_entry_prog);
+	if (kbp == 0) {
+		printk(KERN_WARNING"Caught kbp becoming 0\n");
+		return 1;
+	}
     regs->ip = kbp->call_addr;
+	if (kbp->bpf_entry_prog->bpf_func == 0) {
+		printk(KERN_WARNING"Caught entry program func becoming 0\n");
+		return 1;
+	}
     return BPF_PROG_RUN(kbp->bpf_entry_prog, regs);
 }
 

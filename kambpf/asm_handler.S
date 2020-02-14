@@ -51,11 +51,16 @@
 // is filled from the back to the front  
 
 kambpf_entry_handler_asm:
-    // Load the "tag" pointer from rsp-24 to r12
-    movq -24(%rsp), %r12 
 
 	// Store the rsp register while it's still unmodified	
 	movq %rsp, -16(%rsp)
+
+	// Store r11 so we can load the tag pointer into it
+	// 104 = 13*8 position of r11 in pt_regs
+	movq %r11, -104(%rsp)
+
+    // Load the "tag" pointer from rsp-24 to r12
+    movq -24(%rsp), %r11
 
     // skip ss, rsp, flags, cs, rip, orig_rax  = 6 registers
 	// rsp was saved previously
@@ -74,8 +79,8 @@ kambpf_entry_handler_asm:
     push %r9
     push %r10
    
-    // pushed because it stores call target  
-    push %r11
+    // This is for r11, already stored at the start
+	sub $8, %rsp
 
     // Skip rbx
     sub $8, %rsp
@@ -89,7 +94,7 @@ kambpf_entry_handler_asm:
     // Now rsp points to the pt_regs structure on the stack
     // From now on I can clobber all the argument registers
 
-    movq %r12, %rdi
+    movq %r11, %rdi
     movq %rsp, %rsi
     call kambpf_entry_handler
 
@@ -113,14 +118,19 @@ kambpf_entry_handler_asm:
     ret
 
 kambpf_return_handler_asm:
+	// Store the rsp register while it's still unmodified	
+	movq %rsp, -16(%rsp)
+
+	// Store r11 so we can load the tag pointer into it
+	// 104 = 13*8 position of r11 in pt_regs
+	movq %r11, -104(%rsp)
+
     // Load the "tag" pointer from rsp-24 to r12
-    movq -24(%rsp), %r12 
+    movq -24(%rsp), %r11
+
 
     // Since the stack is growing downwards, the pt_regs structure
     // is filled from the back to the front  
-
-	// Store the rsp register while it's still unmodified	
-	movq %rsp, -16(%rsp)
 
 	// Skip ss, rsp, flags, cs, rip, orig_rax, rdi, rsi = 8 register
 	// rsp was saved previously
@@ -153,7 +163,7 @@ kambpf_return_handler_asm:
     // Now rsp points to the pt_regs structure on the stack
     // From now on I can clobber all return value registers
 
-    movq %r12, %rdi
+    movq %r11, %rdi
     movq %rsp, %rsi
     call kambpf_return_handler
 
