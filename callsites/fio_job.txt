@@ -1,0 +1,5 @@
+[testio]
+    bs=4k
+    size=4m
+    rw=randrw
+    ioengine=io_uring

@@ -1,6 +1,33 @@
 import sys
 from call_graph import CallGraph
 from bcc import BPF
+import os
+from signal import SIGUSR1
+
+def add_kambpfprobes(probes, b):
+    from libkambpf import UpdatesBuffer
+    ub = UpdatesBuffer()
+    ub.add_probes([(p[0],b.funcs[p[1]].fd,-1) for p in probes])
+    return ub
+
+def add_kprobes(probes, b):
+    for p in probes:
+        b.attach_kprobe(event=f"0x{p[0]:x}",fn_name=p[1])
+    return None
+
+add_probes = {
+    "kambpfprobes" : add_kambpfprobes,
+    "kprobes" : add_kprobes,
+}
+        
+import argparse
+parser = argparse.ArgumentParser(description='Instrument requests handling in io_uring')
+parser.add_argument('probes', type=str, nargs='?', 
+        default=list(add_probes.keys())[0], choices=add_probes.keys(),
+        help='A tracing mechanism to use.')
+parser.add_argument('--parent-pid', type=int, dest='parent_pid',
+        help='The pid of the process to receive SIGUSR1 when we have set up probes')
+args = parser.parse_args()
 
 prog_text = """
 #ifdef asm_volatile_goto
@@ -106,19 +133,18 @@ io_submit_sqe_addr = graph.get_edges_sites("io_sq_wq_submit_work","__io_submit_s
 b = BPF(text=prog_text)
 b.load_funcs()
 
-from libkambpf import UpdatesBuffer
-ub = UpdatesBuffer()
+# token should not be garbage collected
+token = add_probes[args.probes]([
+    (io_queue_work_on_addr, "tt_queue_work_on"),
+    (io_complete_r_addr, "tt_complete_rw"),
+    (io_complete_w_addr, "tt_complete_rw"),
+    (io_submit_sqe_addr, "tt_submit_sqe"),
+], b)
 
-ub.add_probes([
-    (io_queue_work_on_addr, b.funcs["tt_queue_work_on"].fd, -1),
-    (io_complete_r_addr, b.funcs["tt_complete_rw"].fd, -1),
-    (io_complete_w_addr, b.funcs["tt_complete_rw"].fd, -1),
-    (io_submit_sqe_addr, b.funcs["tt_submit_sqe"].fd, -1),
-])
+print("Attached probes")
+if args.parent_pid:
+    os.kill(args.parent_pid, SIGUSR1)
 
 from time import sleep
 
-try:
-    sleep(1000)
-finally:
-    ub.clear_probes()
+sleep(1000)
