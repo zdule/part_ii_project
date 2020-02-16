@@ -42,4 +42,4 @@ def process_logs(folder):
     return res
 
 if __name__== "__main__":
-    print(process_logs(sys.argv[1]))
+    print(json.dumps(process_logs(sys.argv[1]), sort_keys=True, indent=4))
