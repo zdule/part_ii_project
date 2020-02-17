@@ -1,5 +1,5 @@
 [testio]
     bs=4k
-    size=4m
+    size=40m
     rw=randrw
     ioengine=io_uring

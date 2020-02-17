@@ -7,34 +7,28 @@ import argparse
 import datetime
 from random import shuffle
 
-class TracedContext:
-    def __init__(self, probing_mechanism):
-        self.mech = probing_mechanism
-        self.tracer = None
-
-    def __enter__(self):
-        if self.mech in {'kprobes', 'kambpfprobes'}:
-            old_mask = pthread_sigmask(SIG_BLOCK, {SIGUSR1})
-            self.tracer = Popen(['sudo', 'python3', 'trace_io_uring.py', self.mech, '--parent-pid', str(getpid())], start_new_session=True)
-            sigwait({SIGUSR1}) 
-            pthread_sigmask(SIG_SETMASK, old_mask)
-        
-    def __exit__(self, exc_type, exc_value, traceback):
-        if self.tracer != None:
-            print(f'killing tracer {self.tracer.pid}')
-            run(['sudo', 'kill', '-s', 'SIGINT',  str(self.tracer.pid)])
-
-def single_round(probing_mechanism, output_path):
-    with TracedContext(probing_mechanism):
-        fio = run(['fio', 'fio_job.txt', '--output', output_path, '--output-format', 'json+'])
+from trace_io_uring import IOUringTracer
 
 def run_rounds(folder, num_rounds):
     experiments = [ (probes, i) for i in range(num_rounds) for probes in ["no_probes", "kprobes", "kambpfprobes"]]
     shuffle(experiments)
 
-    for i,e in enumerate(experiments):
+    tracer = IOUringTracer()
+    for i,(probing_mechanism, run_id) in enumerate(experiments):
         print(f"Running round {i+1}/{len(experiments)}")
-        single_round(e[0], folder+e[0]+'-'+str(e[1])+'.json') 
+
+        tracer.add_probes(probing_mechanism)
+        
+        output_path = f"{folder}/{probing_mechanism}-{run_id}.json"
+        fio = Popen(['fio', 'fio_job.txt', '--output', output_path, '--output-format', 'json+'])
+
+        while True:
+            for _ in range(20):
+                tracer.receive_messages()
+            if fio.poll() != None:
+                break 
+
+        tracer.remove_probes()
 
 parser = argparse.ArgumentParser(description='Run fio benchmark with different tracing mechanisms')
 parser.add_argument('--repetitions', type=int, default=5,

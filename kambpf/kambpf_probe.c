@@ -9,26 +9,26 @@
 int kambpf_entry_handler_asm(void);
 int kambpf_return_handler_asm(void);
 
-// NOTE, if needed the call destination could be put in r11
-
 u64 kambpf_entry_handler(struct kambpf_probe *kbp, struct pt_regs *regs) {
-	if (kbp == 0) {
-		printk(KERN_WARNING"Caught kbp becoming 0\n");
-		return 1;
-	}
-    //printk("Entry prog %px\n", kbp->bpf_entry_prog);
+    int ret;
     regs->ip = kbp->call_addr;
-	if (kbp->bpf_entry_prog->bpf_func == 0) {
-		printk(KERN_WARNING"Caught entry program func becoming 0\n");
-		return 1;
-	}
-    return BPF_PROG_RUN(kbp->bpf_entry_prog, regs);
+
+    preempt_disable();
+    rcu_read_lock();
+    ret = BPF_PROG_RUN(kbp->bpf_entry_prog, regs); 
+    rcu_read_unlock();
+    preempt_enable();
+
+    return ret;
 }
 
 void kambpf_return_handler(struct kambpf_probe *kbp, struct pt_regs *regs) {
-    //printk("Entry prog %px\n", kbp->bpf_return_prog);
     regs->ip = kbp->call_addr;
-    BPF_PROG_RUN(kbp->bpf_return_prog, regs);
+    preempt_disable();
+    rcu_read_lock();
+    BPF_PROG_RUN(kbp->bpf_return_prog, regs); 
+    rcu_read_unlock();
+    preempt_enable();
 }
 
 unsigned long callq_target(unsigned long addr) {

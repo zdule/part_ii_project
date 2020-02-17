@@ -42,4 +42,10 @@ def process_logs(folder):
     return res
 
 if __name__== "__main__":
-    print(json.dumps(process_logs(sys.argv[1]), sort_keys=True, indent=4))
+    logs = process_logs(sys.argv[1])
+#print(json.dumps(logs, sort_keys=True, indent=4))
+    for k,v in logs.items():
+        print(f"{k}:\tread {v['read_lat_mean']}ns\twrite {v['write_lat_mean']}ns")
+    for k,v in logs.items():
+        print(f"{k}:\tread {v['read_bw_mean']}kbps\twrite {v['write_bw_mean']}kbps")
+#print(logs.read_lat

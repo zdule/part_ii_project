@@ -42,7 +42,9 @@
 	saved registers which they modify, and this is only rsp.
 */
 
-/* Assumes a "tag" pointer is stored in esp-24.
+/* Assumes a "tag" pointer in r11.
+   Never store on the stack below rsp, it will get overwritten by 
+   interrupt handlers.
    Constructs a pt_regs struct on the stack.
    Call the c Part of the handler with the tag and pt_regs* as arguments.
 */
@@ -54,13 +56,6 @@ kambpf_entry_handler_asm:
 
 	// Store the rsp register while it's still unmodified	
 	movq %rsp, -16(%rsp)
-
-	// Store r11 so we can load the tag pointer into it
-	// 104 = 13*8 position of r11 in pt_regs
-	movq %r11, -104(%rsp)
-
-    // Load the "tag" pointer from rsp-24 to r12
-    movq -24(%rsp), %r11
 
     // skip ss, rsp, flags, cs, rip, orig_rax  = 6 registers
 	// rsp was saved previously
@@ -79,11 +74,8 @@ kambpf_entry_handler_asm:
     push %r9
     push %r10
    
-    // This is for r11, already stored at the start
-	sub $8, %rsp
-
-    // Skip rbx
-    sub $8, %rsp
+    // Skip r11 and rbx
+	sub $16, %rsp
 
     // Save rbp to pass it to eBPF
     push %rbp
@@ -94,6 +86,7 @@ kambpf_entry_handler_asm:
     // Now rsp points to the pt_regs structure on the stack
     // From now on I can clobber all the argument registers
 
+    // r11 stores the struct kambpf_probe *
     movq %r11, %rdi
     movq %rsp, %rsi
     call kambpf_entry_handler
@@ -121,14 +114,6 @@ kambpf_return_handler_asm:
 	// Store the rsp register while it's still unmodified	
 	movq %rsp, -16(%rsp)
 
-	// Store r11 so we can load the tag pointer into it
-	// 104 = 13*8 position of r11 in pt_regs
-	movq %r11, -104(%rsp)
-
-    // Load the "tag" pointer from rsp-24 to r12
-    movq -24(%rsp), %r11
-
-
     // Since the stack is growing downwards, the pt_regs structure
     // is filled from the back to the front  
 
@@ -146,14 +131,9 @@ kambpf_return_handler_asm:
 	// save the return value register rax
     push %rax
 
-	// skip registers r8-r10 = 3 registers
-    sub $24, %rsp
-
-    push %r11
+	// skip registers r8-r11, rbx = 5 registers
+    sub $40, %rsp
     
-    // Skip rbx
-    sub $8, %rsp
-
     // Save rbp to pass it to eBPF
     push %rbp
 
@@ -163,15 +143,13 @@ kambpf_return_handler_asm:
     // Now rsp points to the pt_regs structure on the stack
     // From now on I can clobber all return value registers
 
+    // struct kambpf_probe * was passed in through r11
     movq %r11, %rdi
     movq %rsp, %rsi
     call kambpf_return_handler
 
-    // Skip r15, r14, r13, r12, rbp, rbx, r11 = 7 registers
-    add $56, %rsp
-
-    // Skip r10, r9, r8 = 3 registers
-	add $24, %rsp
+    // Skip r15, r14, r13, r12, rbp, rbx, r11-r8 = 10 registers
+    add $80, %rsp
 
 	// Restore the rax return value register
     pop %rax
