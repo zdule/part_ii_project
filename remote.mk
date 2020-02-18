@@ -10,3 +10,6 @@ rsync:
 r_%: rsync
 	ssh $(REMOTE) "cd part_ii_project && pwd && make $*"
 
+get_results:
+	scp -r $(REMOTE):~/part_ii_project/callsites/measurements/latest/ .
+
