@@ -1,8 +1,12 @@
 from bisect import bisect
 
-CALLS_PATH = 'calls'
+import callsites
+
+CALLS_PATH, SYMBOLS_PATH = callsites.init_cache('./cache')
+
+#CALLS_PATH = 'calls'
 KALLSYMS_PATH = '/proc/kallsyms'
-SYMBOLS_PATH = 'System.map-5.3.0-28-generic'
+#SYMBOLS_PATH = 'System.map-5.3.0-28-generic'
 
 def reverse_dict(d):
     return {v: k for k, v in d.items()}
