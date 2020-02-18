@@ -1,3 +1,3 @@
 obj-m += kambpf.o
 kambpf-y := kambpf_main.o asm_handler.o kambpf_probe.o
-ccflags-y := -I/usr/local/include
+ccflags-y := -I$(KAMPROBES_INCLUDE_DIR) -I/usr/local/include

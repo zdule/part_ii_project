@@ -4,18 +4,19 @@
 
 all: kamprobes kambpf test_victim libkambpf
 
-libkambpf:
-	make -f libkambpf/Makefile S=libkambpf B=libkambpf/build
+kamprobes:
+	cd kamprobes && make
 
-kamprobes/build/Makefile:
-	mkdir -p kamprobes/build
-	cd kamprobes/build && cmake ..
+kamprobes_clean:
+	cd kamprobes && make mrproper
 
-kamprobes: kamprobes/build/Makefile
-	cd kamprobes/build && make
-
+kambpf: export KAMPROBES_INCLUDE_DIR = $(PWD)/kamprobes/src/include
+kambpf: export KAMPROBES_SYMS = $(PWD)/kamprobes/build/Kbuild/Module.symvers
 kambpf: kamprobes
 	cd kambpf && make
+
+libkambpf:
+	make -f libkambpf/Makefile S=libkambpf B=libkambpf/build
 
 test_victim: kambpf
 	cd test_victim && make

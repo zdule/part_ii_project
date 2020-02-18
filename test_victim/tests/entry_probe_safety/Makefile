@@ -6,6 +6,7 @@ userland := $B/userland
 objs += $(userland).o
 progs += $(userland)
 $(userland)-objs := $(test_helpers) $(userland).o 
-$(userland)-libs := $(libkambpf) -lbpf -lelf
+$(userland)-libs := $(libkambpf)
+$(userland)-lflags := -lbpf -lelf
 
 

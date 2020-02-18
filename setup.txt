@@ -1,0 +1,50 @@
+# Make sure you are running at least version 5.3 of the kernel
+# For moving from 4.15 installed on Ubuntu 18.04, you need to install
+sudo apt-get install --install-recommends linux-generic-hwe-18.04
+
+mkdir ~/progs_and_libs
+cd ~/progs_and_libs
+
+# install libelf which is a dependency of libbpf
+sudo apt install libelf-dev
+# pkg-config also a dependency of libbpf
+sudo apt install pkg-config
+
+# Install libbpf which is used by tests written in C
+git clone https://github.com/libbpf/libbpf.git
+cd libbpf
+git checkout 5033d71
+cd src
+# Make sure that ld on your distribution searches /usr/local/lib/x86_64-linux-gnu
+sudo PREFIX=/usr/local LIBDIR=/usr/local/lib/x86_64-linux-gnu make install
+cd ..
+
+# Install fio with iouring support
+
+cd ~/progs_and_libs
+wget https://github.com/axboe/liburing/archive/liburing-0.3.zip
+unzip liburing-0.3.zip
+cd liburing-liburing-0.3/ 
+./configure
+make 
+sudo make install
+cd ..
+
+cd ~/progs_and_libs
+wget https://github.com/axboe/fio/archive/fio-3.17.zip
+unzip fio-3.17.zip
+cd fio-fio-3.17
+./configure
+make
+sudo make install
+cd ..
+
+# Install bcc and python bindings for it 
+sudo apt install python3-bpfcc
+
+
+# Install clang and llvm for compiling bpf programs (on my system this installed version 6)
+sudo apt install clang llvm
+
+# For extracting callsites from vmlinux you will need
+sudo apt install python3-pyelftools python3-capstone

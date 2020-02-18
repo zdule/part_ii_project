@@ -29,13 +29,15 @@ userland := $B/tests/entry_probe_correctness/userland
 objs += $(userland).o
 progs += $(userland)
 $(userland)-objs := $(test_helpers) $(userland).o 
-$(userland)-libs := $(libkambpf) -lbpf -lelf
+$(userland)-libs := $(libkambpf)
+$(userland)-lflags := -lbpf -lelf
 
 userland := $B/tests/entry_probe_correctness/return_probe_userland
 objs += $(userland).o
 progs += $(userland)
 $(userland)-objs := $(test_helpers) $(userland).o 
-$(userland)-libs := $(libkambpf) -lbpf -lelf
+$(userland)-libs := $(libkambpf)
+$(userland)-lflags := -lbpf -lelf
 
 objs += $B/tests/test_helpers.o
 
@@ -58,7 +60,7 @@ $(deps): $B/%.d: $S/%.c
 
 .SECONDEXPANSION:
 $(progs): %: $$($$@-objs) $$($$@-libs)
-	gcc -o $@ $($@-objs) $($@-libs)
+	gcc -o $@ $($@-objs) $($@-libs) $($@-lflags)
 
 targets := $(objs)
 targets += $(bpf_objects)

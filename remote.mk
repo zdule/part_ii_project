@@ -1,10 +1,12 @@
 .PHONY: remote_test rsync
 
+REMOTE ?= kamprobes_vm
 all: remote_test
 
 rsync:
-	rsync --exclude="build/" --exclude=".git" -avz . kamprobes_vm:~/part_ii_project
+	git ls-files -z --recurse-submodules  | rsync --files-from - -avc0 . $(REMOTE):~/part_ii_project
+#rsync --exclude="build/" --exclude=".git" -avz . $(REMOTE):~/part_ii_project
 
 r_%: rsync
-	ssh kamprobes_vm "cd part_ii_project && pwd && make $*"
+	ssh $(REMOTE) "cd part_ii_project && pwd && make $*"
 

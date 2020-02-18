@@ -3,3 +3,5 @@ vmlinux
 vmlinuz*
 calls
 extract-vmlinux
+cache
+latest

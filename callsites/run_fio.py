@@ -6,20 +6,21 @@ from os import getpid, makedirs
 import argparse
 import datetime
 from random import shuffle
+from pathlib import Path
 
 from trace_io_uring import IOUringTracer
 
 def run_rounds(folder, num_rounds):
-    experiments = [ (probes, i) for i in range(num_rounds) for probes in ["no_probes", "kprobes", "kambpfprobes"]]
+    experiments = [ probes for _ in range(num_rounds) for probes in ["no_probes", "kprobes", "kambpfprobes"]]
     shuffle(experiments)
 
     tracer = IOUringTracer()
-    for i,(probing_mechanism, run_id) in enumerate(experiments):
+    for i,probing_mechanism in enumerate(experiments):
         print(f"Running round {i+1}/{len(experiments)}")
 
         tracer.add_probes(probing_mechanism)
         
-        output_path = f"{folder}/{probing_mechanism}-{run_id}.json"
+        output_path = folder / f"{probing_mechanism}-{i}.json"
         fio = Popen(['fio', 'fio_job.txt', '--output', output_path, '--output-format', 'json+'])
 
         while True:
@@ -37,7 +38,11 @@ parser.add_argument('-o', type=str, default='measurements/',
         help='Folder in which to store log results')
 args = parser.parse_args()
 
-folder = args.o + str(datetime.datetime.now()) + "/"
+folder = Path(args.o) / str(datetime.datetime.now())
 makedirs(folder, exist_ok=True)
+latest = Path(args.o) / 'latest'
+if latest.is_symlink():
+    latest.unlink()
+latest.symlink_to(folder.name)
 run_rounds(folder, args.repetitions)
 
