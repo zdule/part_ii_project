@@ -22,7 +22,7 @@ count:
 	detex diss.tex | tr -cd '0-9A-Za-z \n' | wc -w
 
 monitor:
-	printf '%s\n' $(DISS) | entr make diss.pdf
+	printf '%s\n' $(DISS) | entr make $(out)/diss.pdf
 
 monitor_rep:
 	echo report.tex | entr make $(out)/report.pdf

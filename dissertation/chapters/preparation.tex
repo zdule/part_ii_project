@@ -1,0 +1,75 @@
+\chapter{Preparation}
+ 
+\iffalse
+Even before writing the project proposal my supervisor and I agreed that the best way to make a tracing system that can trace many call instructions and supports programmable event handlers is to add support for eBPF programs to kamprobes. Given that kamprobes already do a good job of tracing a large number of instruction calls, recreating the mechanism they use would be needlessly repeating work.
+\fi
+
+\section {Requirements analysis} 
+    The main goal of the project was to expand the uses of tracing by allowing scalable use of large numbers of probes. The solution I find must also be easy to use (for programmers and system administrators), and performant despite the large numbers of probes.
+
+    Ease of use, Scalability, Flexibility in what is recorded, Flexibility in what is traced, Maintainability, Interoperability, Performance
+    
+    With that goal in mind the following requirement were derived:
+    \begin{itemize}
+        \item \textbf{Scalable support for large numbers of probes} -- This is the reason other people should care about the project. It makes more information about the system accessible.
+        % Performance
+        % Ease of use
+        % Maintainable.
+        \item \textbf{Low overhead by triggering probes only when necessary} -- % No one will use tracing if it brings their system to a crawl. As discussed before a large overhead makes disrupts applications running on the system and makes the collected timing information less accurate. % TODO
+        \item \textbf{Low overhead by recording only the necessary information} -- %TODO
+        \item \textbf{Being able to use the probes without writing kernel code} -- Writing kernel code is time consuming and error-prone. There for not requiring writing kernel code will make my solution a lot easier to use.
+        \item \textbf{Compatibility with changes in the Linux kernel} -- The Linux kernel is in constant development. My solution should continue to work with newer, enhanced, versions of the kernel. Requiring a specific version of the kernel would make the system administrators choose between my solution and improvements and security fixes present in the newer versions of the kernel. This is not acceptable as my solution would soon loose all its users.
+        \item \textbf{Ease of deployment} -- In particular, my solution should not need recompiling the kernel to work. That would be a hurdle that many users would not want to overcome.
+        \item \textbf{X86_64} -- Servers...
+    \end{itemize}
+
+    Additional goals of the project :
+    \begin{itemize}
+        \item \textbf{End to end tests} -- 
+        \item \textbf{Demo application} --
+        \item \textbf{Performance measurement} --
+    \end{itemize}
+
+    Extensions:
+    \begin{itemize}
+        \item User friendly way to specify what to trace... Turned out to be a python library
+    \end{itemize}
+
+\section{Background} 
+    The following section will describe material I needed to understand before beginning work on the project.
+
+    \subsection{Instrumenting function calls - kamprobes}
+        Since I relied on kamprobes for function call tracing, and I had to modify their implementation, I needed to learn how kamprobes work. C function calls are implemented using the call machine code instruction. Kamprobes change the program machine code while its running to change its behaviour, in particular to record the execution of a call instruction.
+
+        A call instruction only has a single argument -- the address of the function being called, also known as the call destination. The x86-64 machine code representation of a call instruction would consist of a single byte operation code, and the 4 byte offset to the destination address (that is by how much we need to jump forwards, or backwards to get to the function address).
+
+        If we want to trace a particular call to a function `foo(int a, int b)` we can do it by writing a new function, called for example trace\_foo(int a, int b), which stores the argument a and b into a buffer, calls the original function foo(a,b) and returns. We would then replace the 4 bytes of the function call argument to store the offset to trace\_foo instead of foo. When the call instruction is executed, trace\_foo is called instead of foo, and the function arguments are recorded. Because trace\_foo itself calls foo, apart from the arguments being recorded the effect of the call is the same.
+
+        This is in principle how kamprobes work. Function trace\_foo is the event handler of the call instruction is executed event. Note that in the scheme I just described the event handler has to call the original function itself. Apart from being poor design because the handler might not call the original instruction, this design is problematic because you cannot simply use the same handler for multiple different functions. So what kamprobes really do is write machine code to memory that calls the handler and then the original function. They use the address of this generated machine code as the target of the traced call instruction.
+
+        As a part of this project I will write a kamprobes handler.  
+
+
+    \subsection{Loadable kernel modules}
+        The Linux kernel supports loading code that   
+
+    \subsection{The eBPF virtual machine}
+        System administrators often configure behaviour of the operating system. Examples of this are specifying which packets to filter, security policies, and also tracing event handlers. 
+
+        Instead of adding more and more configuration options to define precise policies, the Linux kernel developers added a virtual machine, called eBPF, to the kernel. In this way policies can be configured in the form of programs for the eBPF virtual machine.
+
+    \subsection{The x86-64 calling convention}
+        In the previous section
+
+
+\section{Choice of tools and languages}
+
+    - scarce documentation, so reading source
+
+\section{Development strategy}
+
+\section{Starting point}
+
+\section{Open source licensing}
+
+\section{Summary}

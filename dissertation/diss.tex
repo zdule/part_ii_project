@@ -125,21 +125,23 @@ Supervisor:         & Dr Lucian Carata                  \\
 \pagestyle{headings}
 
 \chapter{Introduction}
-    This dissertation introduces kambpf, a flexible, low-overhead function-call tracing system for the Linux kernel. Compared to the tracing capabilities currently in the Linux kernel, kambpf has a lower overhead and the added flexibility instrumenting any subset of call sites of a given function. Compared to the kamprobes project on which it builds upon, kambpf provides the flexibility of being programmable with eBPF, and an interface from the user space. 
+    This dissertation introduces kambpf, a flexible, low-overhead function-call tracing system for the Linux kernel. Compared to the tracing capabilities currently in the Linux kernel, kambpf has a lower overhead and the added flexibility instrumenting any subset of call sites of a given function (and add massive amounts of probes). Compared to the kamprobes project on which it builds upon, kambpf provides the flexibility of being programmable with eBPF, and an interface from the user space. 
 
     The kambpf system is available as a loadable kernel module with its functionality exported to the user space via a simple to use C library.
 
     \section{Motivation}
 
-        Dynamic tracing is a way to gain insight about the execution of a program. It is done by inserting additional instructions into to binary of a process at runtime to record data, such as values of function arguments, stack traces or timing. The effect is similar to inserting printf's into the source code, but can be enabled and disabled at runtime without recompiling or even stoping the program, and with no cost when the tracing is disabled.
+        Dynamic tracing is a way to gain insight into the execution of a program. It is done by inserting additional instructions into to binary of a process at runtime to record data, such as values of function arguments, stack traces or timing. The effect is similar to inserting printf's into the source code, but it can be enabled and disabled at runtime without recompiling or even stoping the program, and with no cost when tracing is disabled.
 
         Dynamic tracing is especially useful for examining long running processes in production. In such a scenario, restrating the process would be too disruptive. On the other hand replicating the conditions in a test environment might be impossible due to a unique combination of hardware, configuration, other applications running concurrently, and the workload. 
 
-        Useful questions that dynamic tracing can answer are which part of the code, or resource is the bottleneck; what values is this function usually called with; why does a piece of code exibit pathological behaviour; how much resources is dedicated to running this process. With answers to these questions we can fix performance problems, optimize the code, choose which resource to buy more of.
+        Useful questions that dynamic tracing can answer are which part of the code, or which external resource is the bottleneck; what values is this function usually called with; why does a piece of code exibit pathological behaviour; how much resources is dedicated to running this process. With answers to these questions we can fix performance problems, optimize the code, choose which resource to buy more of.
 
         It is particularly convenient to instrument the operating system kernel because it is the meeting point of all processes and the hardware resources. For example, just by instrumenting kernel functions are called we can record when processes are scheduled, how much data they send and to whom, and the latency and throughput a hard drive.
 
-        When analysing performance by tracing it is most important that the overhead is as small as possible otherwise our measurements might show that the tracing itself is the bottleneck, or in other way show a result skewed by tracing. As is often the case the easiest way to reduce the cost of tracing is simply to do less, which mostly refers to saving less data about events into buffers. This is usually done in two ways. Firstly, if a data point is going to be discarded, then it should be discarded as soon as possible, before writing it to a buffer. Secondly, if we are only interested in a summary of the collected data, such as an average, then the tracing instrumentation should maintain a average while tracing instead of recording all data to a buffer and processing it afterwards. Because the rules for which events should be discarded and how the collected data should be summarized vary between different use cases the tracing system should allow specifying the action taken in response to events.
+        An assumption present in the implementation available in the Linux kernel (TODO: too indirect) is that the user will want to instrument a few specific function calls related to the issue they are debugging. For this reason the implementation hasn't been designed to support large numbers of probes. A use case that requires large number of probes is measuring how much time is spend executing functions in each file. To achieve this probes would be added to all function calls made from any file into other files. This requires massive number of probes, and is something that current implementations struggle with as they scale poorly with the number of probes used.
+
+        When analysing performance by tracing it is most important that the overhead is as small as possible otherwise our measurements might show that the tracing itself is the bottleneck, or in other way show a result skewed by tracing. As is often the case the easiest way to reduce the cost of tracing is simply to do less of it, which mostly refers to saving less data about events into buffers. This is usually done in two ways. Firstly, if a data point is going to be discarded, then it should be discarded as soon as possible, before writing it to a buffer. Secondly, if we are only interested in a summary of the collected data, such as an average, then the tracing instrumentation should maintain a average while tracing instead of recording all data to a buffer and processing it afterwards. Because the rules for which events should be discarded and how the collected data should be summarized vary between different use cases the tracing system should allow specifying the action taken in response to events.
 
 		Even more overhead can be avoided if the tracing code doesn't even run when no data should be collected. Lets imagine that we to analyse the high memory usage of a device driver. To do so we might want to see where in the code is most memory allocated, and we can collect this data by tracing the function \texttt{kmalloc}. As we are only interested in allocations coming from that particular driver, the handler that we specify to run in response to \texttt{kmalloc} being called will check to see if the function is called from our driver and only if it is will collect the stack trace and the size of memory allocated. For all of the much more common calls to kmalloc happening from outside the driver this whole process will have been unnecessary overhead. This overhead can be eliminated by tracing the just the individual function call instructions of kmalloc that we are interested in, instead of the kmalloc function itself. The practical difference is that the tracing code is dynamically inserted into multiple call sites calling kmalloc instead of inserting the instrumentation at the beginning of the kmalloc function itself. Although this does more work upfront, there is no cost for the calls originating outside of our driver. Because we can better describe what events we are interested in by specifying the individual call sites of a function, tracing has less overhead.
 
@@ -147,10 +149,6 @@ Supervisor:         & Dr Lucian Carata                  \\
 
 		The goal of this project is thus to create a flexible and efficient tracing system for the Linux kernel, that can trace individual call sites, and can take eBPF programs as event handlers. Furthermore I will measure the overhead of this new tracing mechanism, and compare it to the overhead of the existing solutions. Finally, in order to verify that the tracing system can be used for a real world application I will use it to analyse where the kernel is spending time and waiting when sending a TCP packet. (TBC)
 
-        %There is a class of bugs and performance issues that are impractical or impossible to be reproduced by a developer in a testing environment
-        %The behaviour and performance of a computer system is influenced by the software components it runs, the hardware on which it runs, how the system is configured, and the data it processes. It is thus inevitable that problems which were not be observed, and are difficult to reproduce in development and testing occur in production. In such cases it is often up to the system integrator to analyse the performance issues.\cite{DTrace2004}
-        
-        %Instrumenting operating system's kernel, because it is the interface through which all processes interact with each other and with the hardware, is a great way to observe and analyse the behaviour of all processes running on the system. By instrumenting the kernel the system integrator can find performance bottlenecks and processes that are misbehaving. In particular, dynamic tracing is a great way to instrument long-running software such as the kernel, because it doesn't require recompiling or restarting to enable and disable the instrumentation.\cite{DynamicPI1994}
 
     \section{Previous work}
 		\begin{itemize}
@@ -167,31 +165,10 @@ Supervisor:         & Dr Lucian Carata                  \\
 
 		Mention that the plain is to add eBPF support to kamprobes in the introduction?
 
+\input{chapters/preparation.tex}
+\chapter{implementation}
 
-\chapter{Preparation}
-
-	Even before writing the project proposal my supervisor and I agreed that the best way to make a tracing system that can trace many call instructions and supports programmable event handlers is to add support for eBPF programs to kamprobes. Given that kamprobes already do a good job of tracing a large number of instruction calls, recreating the mechanism they use would be needlessly repeating work.
-
-	Another option was to extend the kprobes to handle call sites as a special case, and to solve scalability issues 
-
-    \section{Theoretical background} 
-        \subsection{Instrumenting function calls - kamprobes}
-        \subsection{The eBPF virtual machine}
-		\subsection{The x86-64 calling convention}
-   
-    \section {Requirements analysis} 
-        
-    \section{Choice of tools and languages}
-
-        - scarce documentation, so reading source
-
-    \section{Development strategy}
-
-    \section{Starting point}
-
-    \section{Open source licensing}
-
-    \section{Summary}
+    \section{Repository overview}
 
 \printbibliography
 
