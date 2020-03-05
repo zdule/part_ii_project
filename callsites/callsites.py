@@ -10,6 +10,48 @@ import shutil
 from pathlib import Path
 from subprocess import run
 
+def is_in_section(addr, ndx, section, elf_file):
+    if ndx == 'ABS':
+        raise ValueError("Not supported")
+        return addr >= section['sh_addr'] and addr < section['sh_addr'] + section['sh_size']
+    else:
+        return elf_file.get_section(ndx)['sh_name'] == section['sh_name']
+
+def parse_module_ko(module_path):
+    call_graph = dict()
+    with open(module_path, 'rb') as f:
+        elf_file = ELFFile(f)
+        code = elf_file.get_section_by_name('.text')
+        symtab = elf_file.get_section_by_name('.symtab')
+        relocs = elf_file.get_section_by_name('.rela.text')
+        
+        relmap = dict()
+        for relocation in relocs.iter_relocations():
+            symbol = symtab.get_symbol(relocation['r_info_sym'])
+            relmap[relocation['r_offset']] = symbol.name
+
+        code_instructions = code.data()
+        for symbol in symtab.iter_symbols():
+            if symbol['st_info']['type'] == "STT_FUNC":
+                if not is_in_section(symbol['st_value'], symbol['st_shndx'], code, elf_file):
+                    continue
+                md = Cs(CS_ARCH_X86, CS_MODE_64)
+
+                start = symbol['st_value']
+                end = start + symbol['st_size']
+                for i in md.disasm(code_instructions[start:end], offset=0):
+                    if i.mnemonic=="call":
+                        if (i.address+1 + start) in relmap:
+                            target = relmap[i.address+1 + start]
+                            print(f'{symbol.name}:{i.address} {target}')
+                            if symbol.name not in call_graph:
+                                call_graph[symbol.name] = []
+                            call_graph[symbol.name].append((i.address, target, 0))
+                        else:
+                            print("WARNING MISSING SOME CALLSITES")
+                            print("call site not in relocation table")
+        return call_graph
+
 def get_elf_details(vmlinux_path, calls_path):
     with open(calls_path, 'w') as out:
         with open(vmlinux_path, 'rb') as f:
@@ -22,6 +64,9 @@ def get_elf_details(vmlinux_path, calls_path):
             md = Cs(CS_ARCH_X86, CS_MODE_64)
             md.skipdata = True
             for i in md.disasm(ops, addr):
+                if i.mnemonic == "call":
+                    print(f"{i.address:x} {i.op_str} {i.mnemonic}")
+                continue
                 if i.mnemonic=="call":
                     arg = ""
                     if i.op_str.startswith('[0x') and i.op_str.endswith(']'):
@@ -30,6 +75,7 @@ def get_elf_details(vmlinux_path, calls_path):
                         arg = i.op_str
                     if arg != '':
                         print(f'0x{i.address:x} {arg}', file=out)
+
 
 def init_cache(cache_path):
     uname = os.uname().release
@@ -55,23 +101,7 @@ def init_cache(cache_path):
     return (calls_path, system_map_path)
 
 def main():
-    get_elf_details("cache/vmlinux-5.3.0-28-generic", 'cache/calls')
-    #init_cache('cache')
-    exit(0)
-    """
-    Main.
-    """
-    global args
-    global p_addr_delta
-    global stage
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-v', dest="vmlinux_path", action='store', required=True,
-            help="""Path to vmlinux. (Typically /usr/src/linux/vmlinux but varies according to distribution and installed kernel. If you build your own kernel you'll find it in the build dir)""")
-
-    args = parser.parse_args()
-    
-    get_elf_details(args.vmlinux_path, 'calls')
-
+    parse_module_ko("cache/kambpf.ko")
 
 if __name__ == '__main__':
     main()

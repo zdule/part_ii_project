@@ -53,15 +53,26 @@ class CallGraph:
         l_fun_addr = self.kallsyms[fun_name]
         return (fun_name,f_addr-f_fun_addr+l_fun_addr)
 
+    def _graph_add_callsite(self, site_fun, site_addr, target_fn, target_addr):
+        if site_fun not in self.graph:
+            self.graph[site_fun] = []
+
+
     def _populate_graph(self, calls):
         self.graph = {}
         for (call_site, call_target) in calls:
             site_fun, l_site_addr = self._f_addr_to_fun_and_l_addr(call_site)
             target_fun, l_target_addr = self._f_addr_to_fun_and_l_addr(call_target)
             
-            if site_fun not in self.graph:
-                self.graph[site_fun] = []
             self.graph[site_fun].append((l_site_addr, l_target_addr, target_fun))
+
+    def parse_module(self, module_ko_path):
+        module_calls = callsites.parse_module_ko(module_ko_path):
+        for site_fun, calls in module_calls:
+            for (site_off, target_fun, target_off) in calls:
+                site_addr = self.kallsyms[site_fun] + site_off
+                target_addr = self.kallsyms[target_fun] + target_off
+                self._graph_add_callsite(site_fun, site_addr, target_fun, target_addr)
 
     def __init__(self, calls_path=CALLS_PATH, kallsyms_path=KALLSYMS_PATH, symbols_path=SYMBOLS_PATH):
         self.kallsyms = CallGraph._read_kallsyms(kallsyms_path)
