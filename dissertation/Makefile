@@ -5,10 +5,12 @@
 # and that TAB is used after ':' and before unix commands.
 
 DISS = diss.tex refs.bib 
+other_deps = chapters/preparation.tex
 out = build
 latex_flags = -output-directory=$(out) -interaction=nonstopmode
 
-$(out)/diss.pdf: $(DISS)	
+$(out)/diss.pdf: $(DISS) $(other_deps)
+	echo $(other_deps)
 	mkdir -p $(out)
 	xelatex $(latex_flags) diss.tex
 	biber --input-directory=$(out) --output-directory=$(out) diss

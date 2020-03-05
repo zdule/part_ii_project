@@ -1,38 +1,28 @@
 \chapter{Preparation}
  
-\iffalse
-Even before writing the project proposal my supervisor and I agreed that the best way to make a tracing system that can trace many call instructions and supports programmable event handlers is to add support for eBPF programs to kamprobes. Given that kamprobes already do a good job of tracing a large number of instruction calls, recreating the mechanism they use would be needlessly repeating work.
-\fi
-
 \section {Requirements analysis} 
-    The main goal of the project was to expand the uses of tracing by allowing scalable use of large numbers of probes. The solution I find must also be easy to use (for programmers and system administrators), and performant despite the large numbers of probes.
+    The main goal of the project was to make new uses of tracing possible with scalable support of large numbers of probes. The design I find should be efficient and reasonably simple to deploy and use. These ideas are expanded into requirements listed bellow. The requirements explain decisions made during the implementation.
 
-    Ease of use, Scalability, Flexibility in what is recorded, Flexibility in what is traced, Maintainability, Interoperability, Performance
-    
-    With that goal in mind the following requirement were derived:
     \begin{itemize}
         \item \textbf{Scalable support for large numbers of probes} -- This is the reason other people should care about the project. It makes more information about the system accessible.
-        % Performance
-        % Ease of use
-        % Maintainable.
-        \item \textbf{Low overhead by triggering probes only when necessary} -- % No one will use tracing if it brings their system to a crawl. As discussed before a large overhead makes disrupts applications running on the system and makes the collected timing information less accurate. % TODO
-        \item \textbf{Low overhead by recording only the necessary information} -- %TODO
-        \item \textbf{Being able to use the probes without writing kernel code} -- Writing kernel code is time consuming and error-prone. There for not requiring writing kernel code will make my solution a lot easier to use.
-        \item \textbf{Compatibility with changes in the Linux kernel} -- The Linux kernel is in constant development. My solution should continue to work with newer, enhanced, versions of the kernel. Requiring a specific version of the kernel would make the system administrators choose between my solution and improvements and security fixes present in the newer versions of the kernel. This is not acceptable as my solution would soon loose all its users.
-        \item \textbf{Ease of deployment} -- In particular, my solution should not need recompiling the kernel to work. That would be a hurdle that many users would not want to overcome.
-        \item \textbf{X86_64} -- Servers...
+        \item \textbf{Precise specification of which function calls to trace} -- The intent is to keep overhead low by tracing only the function calls we need to trace.
+        \item \textbf{Performance and flexibility of custom event handler} -- Custom event handlers can be used to avoid recording all information regarding a function call. Instead event handlers can process and record only the needed information.
+        \item \textbf{Use without writing kernel code} -- Writing kernel code is time consuming and error-prone. Therefore, not requiring custom kernel code to add probes and for event handlers will make my design a lot easier to use.
+        \item \textbf{Support for x86-64}-- The scope of the design is limited to the x86-64 Architecture because it is the most common architecture for servers. Additionally, the code will architecture specific so supporting multiple architectures requires a lot of additional work.
+    \end{itemize}
+    
+    The project idea described in the proposal is to satisfy these requirements by building on the existing implementation for scalable, low-overhead instruction call probes, called kamprobes, and use the eBPF virtual machine to specify event handlers. Listed bellow is the work that needed to be done to satisfy the requirements.
+
+    \begin{itemize}
+        \item Build a kernel module that implement a scalable interface for adding and removing probes from user space. The kernel module also needed to implement kamprobes event handlers that call eBPF programs.
+        \item Build a user space library for interfacing with the kernel module.
     \end{itemize}
 
-    Additional goals of the project :
+    As part of ensuring that the implementation is correct and usable, and evaluating the project I committed to:
     \begin{itemize}
-        \item \textbf{End to end tests} -- 
-        \item \textbf{Demo application} --
-        \item \textbf{Performance measurement} --
-    \end{itemize}
-
-    Extensions:
-    \begin{itemize}
-        \item User friendly way to specify what to trace... Turned out to be a python library
+        \item Build end-to-end test that demonstrate the implementation is working as intended.
+        \item Write a demo application using my implementation of tracing to measure queue latency in io\_uring, an asynchronous IO system of the Linux kernel.
+        \item Compare the performance of my implementation to existing implementations in the Linux kernel.
     \end{itemize}
 
 \section{Background} 
@@ -47,24 +37,21 @@ Even before writing the project proposal my supervisor and I agreed that the bes
 
         This is in principle how kamprobes work. Function trace\_foo is the event handler of the call instruction is executed event. Note that in the scheme I just described the event handler has to call the original function itself. Apart from being poor design because the handler might not call the original instruction, this design is problematic because you cannot simply use the same handler for multiple different functions. So what kamprobes really do is write machine code to memory that calls the handler and then the original function. They use the address of this generated machine code as the target of the traced call instruction.
 
-        As a part of this project I will write a kamprobes handler.  
-
-
     \subsection{Loadable kernel modules}
         The Linux kernel supports loading code that   
 
     \subsection{The eBPF virtual machine}
         System administrators often configure behaviour of the operating system. Examples of this are specifying which packets to filter, security policies, and also tracing event handlers. 
 
-        Instead of adding more and more configuration options to define precise policies, the Linux kernel developers added a virtual machine, called eBPF, to the kernel. In this way policies can be configured in the form of programs for the eBPF virtual machine.
+        Instead of adding more and more configuration options to define precise policies, the Linux kernel developers added a virtual machine, called eBPF, to the kernel. In this way policies can be configured in the form of programs for the eBPF virtual machine. Benefits of this approach are that eBPF programs are guaranteed to terminate as they are statically verifiend not to contain any loops. Further more eBPF programs may not write to kernel memory and the read they make are checked at runtime to be safe.
+
+        A eBPF program is developed in C and compiled by the llvm compiler into bytecode. The bytecode is loaded into the kernel with the \texttt{bpf} systemcall. As a result of loading the program the user gets a file descriptor which they can use as a handle for any subsequent operations with the program. One such operation is attaching it to a probe.
 
     \subsection{The x86-64 calling convention}
-        In the previous section
 
 
 \section{Choice of tools and languages}
 
-    - scarce documentation, so reading source
 
 \section{Development strategy}
 
