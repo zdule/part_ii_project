@@ -25,9 +25,10 @@ class KambpfListBuffer(ct.Structure):
         ("entries",ct.POINTER(KambpfListEntry)),
     ]
 
-
 import pathlib
+
 lib = ct.CDLL(pathlib.Path().absolute() / "../libkambpf/build/libkambpf.so")
+
 class Libkambpf:
     open_list_device = lib.kambpf_open_list_device
     open_list_device.restype = ct.POINTER(KambpfListBuffer)
@@ -82,6 +83,7 @@ class UpdatesBuffer:
                 lib.kambpf_updates_set_entry_remove(self._ptr, ct.c_uint32(i), ct.c_uint32(probe))
         lib.kambpf_submit_updates(self._ptr, len(probes))
         probes.clear()
+
 if __name__=="__main__":
     l = KambpfList(b"/dev/kambpf_list")
     pos = l.get_non_empty_pos()
