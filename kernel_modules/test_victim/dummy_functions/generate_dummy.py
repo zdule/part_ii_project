@@ -13,5 +13,5 @@ noinline int kambpf_test_dummy_$0(int a) {
 """
 
 print(first_dummy)
-for i in range(1,100):
+for i in range(1,5000):
     print(dummy_template.replace("$0",str(i)).replace("$1",str(i-1)))

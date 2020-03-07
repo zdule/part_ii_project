@@ -1,5 +1,0 @@
-
-1. Search the pdf, and sources (including propbody.tex) for TBD and TODO, Fix all of those
-2. Search pdf and sources for Dusan, dz308, remove if some unintentionally left where it shouldn't have been
-3. Run through spell checker
-4. See if proforma, title page and declarations match the regulations
