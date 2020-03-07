@@ -1,4 +1,6 @@
-#!/bin/sh
+#!/bin/bash
+
+set -e
 
 source scripts/common.sh
 
@@ -14,7 +16,7 @@ unload() {
 # its device files exist
 load() {
     if ! is_loaded kambpf; then
-        insmod kerenel_modules/kambpf/build/kambpf.ko
+        insmod kernel_modules/kambpf/build/kambpf.ko
     fi
 
     ensure_files_deleted /dev/kambpf_list /dev/kambpf_update

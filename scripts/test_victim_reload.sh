@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e 
+
 source scripts/common.sh
 
 unload() { 
@@ -13,7 +15,7 @@ load() {
     if ! is_loaded test_victim_main; then
         insmod kernel_modules/test_victim/build/test_victim_main.ko
     fi
-	major=`cat /proc/devices | grep -w test_victim_main | cut -d ' ' -f 1`
+	major=`cat /proc/devices | grep -w test_victim | cut -d ' ' -f 1`
     ensure_file_deleted /dev/test_victim
 	mknod /dev/test_victim c $major 0 || exit 1
 }

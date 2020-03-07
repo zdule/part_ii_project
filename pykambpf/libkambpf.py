@@ -25,9 +25,9 @@ class KambpfListBuffer(ct.Structure):
         ("entries",ct.POINTER(KambpfListEntry)),
     ]
 
-import pathlib
+from pathlib import Path
 
-lib = ct.CDLL(pathlib.Path().absolute() / "../libkambpf/build/libkambpf.so")
+lib = ct.CDLL("libkambpf.so")
 
 class Libkambpf:
     open_list_device = lib.kambpf_open_list_device

@@ -1,4 +1,6 @@
-#!/bin/sh
+#!/bin/bash
+
+set -e 
 
 source scripts/common.sh
 
@@ -13,3 +15,5 @@ load() {
     insmod kernel_modules/kamprobes/build/kamprobes.ko || exit 1
 }
 
+# Call the functions passed in as the first argument
+$1

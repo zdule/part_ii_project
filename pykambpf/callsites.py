@@ -43,7 +43,6 @@ def parse_module_ko(module_path):
                     if i.mnemonic=="call":
                         if (i.address+1 + start) in relmap:
                             target = relmap[i.address+1 + start]
-                            print(f'{symbol.name}:{i.address} {target}')
                             if symbol.name not in call_graph:
                                 call_graph[symbol.name] = []
                             call_graph[symbol.name].append((i.address, target, 0))
@@ -64,9 +63,6 @@ def get_elf_details(vmlinux_path, calls_path):
             md = Cs(CS_ARCH_X86, CS_MODE_64)
             md.skipdata = True
             for i in md.disasm(ops, addr):
-                if i.mnemonic == "call":
-                    print(f"{i.address:x} {i.op_str} {i.mnemonic}")
-                continue
                 if i.mnemonic=="call":
                     arg = ""
                     if i.op_str.startswith('[0x') and i.op_str.endswith(']'):

@@ -1,6 +1,6 @@
 # Removes a file given in its first argument if it exists
 ensure_file_deleted() {
-    if test -f $1; then 
+    if test -e $1; then 
         rm $1
     fi
 }
@@ -16,5 +16,5 @@ ensure_files_deleted() {
 is_loaded() {
     # -w searches for whole words
     # -q means silent
-    lsmode | grep -wq $1
+    lsmod | grep -wq $1
 }

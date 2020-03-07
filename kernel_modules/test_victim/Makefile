@@ -23,8 +23,6 @@ clean:
 	make -C /lib/modules/$(shell uname -r)/build M=$B src=$(PWD) clean
 	rm -rf $B/tests
 
-objs += $B/ksyms/ksyms.o
-
 userland := $B/tests/entry_probe_correctness/userland
 objs += $(userland).o
 progs += $(userland)
@@ -75,7 +73,7 @@ $B/.:
 $B/%/.:
 	mkdir -p $@
 
-all: $(targets) $B/Makefile
+all: $(targets) $B/Makefile $B/dummy_functions/.
 	make -C /lib/modules/$(shell uname -r)/build M=$B src=$(PWD) modules
 
 $B/Makefile:

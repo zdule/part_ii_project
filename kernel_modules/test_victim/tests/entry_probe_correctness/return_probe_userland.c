@@ -11,7 +11,6 @@
 #include "../test_helpers.h"
 #include "../../ioctls.h"
 #include "../../libkambpf/libkambpf.h"
-#include "../../ksyms/ksyms.h"
 
 struct perf_buf_cb_ctx {
     bool triggered;

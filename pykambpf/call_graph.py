@@ -1,6 +1,6 @@
 from bisect import bisect
 
-import callsites
+from . import  callsites
 
 CALLS_PATH, SYMBOLS_PATH = callsites.init_cache('./cache')
 

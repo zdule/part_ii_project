@@ -11,7 +11,6 @@
 #include "../test_helpers.h"
 #include "../../ioctls.h"
 #include "../../libkambpf/libkambpf.h"
-#include "../../ksyms/ksyms.h"
 
 int main(int argc, char **argv) {
 	struct bpf_object *obj = load_obj_or_exit(argv[1]);

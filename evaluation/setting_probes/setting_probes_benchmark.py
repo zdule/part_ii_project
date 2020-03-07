@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
-from call_graph import CallGraph
 from bcc import BPF
-from libkambpf import UpdatesBuffer
+from pykambpf import UpdatesBuffer, CallGraph
+from random import shuffle
+import subprocess
+import os
 
-PATH_TO_TEST_MODULE = "../test_victim/build/test_victim_main.ko"
-MAX_DUMMY_PROBE = 5000
+PATH_TO_TEST_MODULE = "../../kernel_modules/test_victim/build/test_victim_main.ko"
 dummy_name_pattern = "kambpf_test_dummy_{}"
 prog_text = """
 int test_fun(struct pt_regs *ctx) {
@@ -42,9 +43,17 @@ def attach_kprobes(call_graph):
     for addr in addrs:
         b.detach_kprobe(event=f"0x{addr:x}")
 
-def run_tests():
-    pass
+def reload_module():
+	subprocess.run([os.getenv("kamprobes_reload"), "unload"])
+	subprocess.run([os.getenv("kambpf_reload"), "load"])
+
+def run_tests(step, max_probes, repetitions):
+	experiments = [ (mechanism, probes) for probes in range(step, max_probes, step) for mechanism in ["kprobes", "kamprobes"]] * repetitions
+	shuffle(experiments)
+	reload_module()
+
+	for (mechanism, probes) in experiments:
+		print(mechanism, probes)
 
 if __name__== "__main__":
-    print(find_addresses(call_graph, 5))
-    attach_kprobes(call_graph)
+	run_tests(5,20,2)

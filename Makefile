@@ -1,6 +1,6 @@
-.PHONY : all kamprobes kambpf test_victim test_victim_load  test_victim_unload \
+.PHONY : all kamprobes  kambpf test_victim test_victim_load  test_victim_unload \
 		 kambpf_load kambpf_unload  kamprobes_load kamprobes_unload libkambpf \
-		 kambpf_reload
+		 kambpf_reload dmesg run_tests
 
 all: kamprobes kambpf test_victim libkambpf
 
@@ -20,7 +20,7 @@ libkambpf:
 	make -f libkambpf/Makefile S=libkambpf B=libkambpf/build
 
 test_victim: kambpf
-	cd test_victim && make
+	cd kernel_modules/test_victim && make
 
 kamprobes_load: kamprobes
 	sudo ./scripts/kamprobes_reload.sh load
