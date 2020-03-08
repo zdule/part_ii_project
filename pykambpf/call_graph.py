@@ -4,9 +4,7 @@ from . import  callsites
 
 CALLS_PATH, SYMBOLS_PATH = callsites.init_cache('./cache')
 
-#CALLS_PATH = 'calls'
 KALLSYMS_PATH = '/proc/kallsyms'
-#SYMBOLS_PATH = 'System.map-5.3.0-28-generic'
 
 def reverse_dict(d):
     return {v: k for k, v in d.items()}
@@ -73,8 +71,6 @@ class CallGraph:
         module_calls = callsites.parse_module_ko(module_ko_path)
         for site_fun, calls in module_calls.items():
             for (site_off, target_fun, target_off) in calls:
-                if target_fun == "memcpy":
-                    continue
                 site_addr = self.kallsyms[site_fun] + site_off
                 target_addr = self.kallsyms[target_fun] + target_off
                 self._graph_add_callsite(site_fun, site_addr, target_addr, target_fun)

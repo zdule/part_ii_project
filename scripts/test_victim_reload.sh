@@ -1,8 +1,9 @@
 #!/bin/bash
 
-set -e 
-
-source scripts/common.sh
+set -e
+parent_dir=$(dirname $BASH_SOURCE[0]) 
+source $parent_dir/env.sh
+source $scripts/common.sh
 
 unload() { 
 	ensure_file_deleted /dev/test_victim
@@ -13,7 +14,7 @@ unload() {
 
 load() {
     if ! is_loaded test_victim_main; then
-        insmod kernel_modules/test_victim/build/test_victim_main.ko
+        insmod $project_dir/kernel_modules/test_victim/build/test_victim_main.ko
     fi
 	major=`cat /proc/devices | grep -w test_victim | cut -d ' ' -f 1`
     ensure_file_deleted /dev/test_victim

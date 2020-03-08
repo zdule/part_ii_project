@@ -1,8 +1,10 @@
 #!/bin/bash
 
 set -e
+parent_dir=$(dirname $BASH_SOURCE[0]) 
+source $parent_dir/env.sh
 
-source scripts/common.sh
+source $scripts/common.sh
 
 # Unloads the kambpf module and removes its device files
 unload() {
@@ -16,7 +18,7 @@ unload() {
 # its device files exist
 load() {
     if ! is_loaded kambpf; then
-        insmod kernel_modules/kambpf/build/kambpf.ko
+        insmod $project_dir/kernel_modules/kambpf/build/kambpf.ko
     fi
 
     ensure_files_deleted /dev/kambpf_list /dev/kambpf_update
