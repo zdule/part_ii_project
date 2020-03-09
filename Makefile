@@ -45,7 +45,7 @@ test_victim_unload:
 run_tests: kamprobes_unload test_victim_load
 	cd kernel_modules/test_victim && ./run_tests.sh
 
-run_setting_benchmark: kambpf_load test_victim_load
+run_setting_benchmark: kambpf_load test_victim_load libkambpf
 	cd evaluation/setting_probes; ./run.sh
 
 dmesg:

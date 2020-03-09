@@ -36,9 +36,9 @@ unsigned long callq_target(unsigned long addr) {
 }
 
 void free_prog(struct bpf_prog **prog) {
-    printk(KERN_INFO"Putting bpf_prog %px\n", *prog);
+    //printk(KERN_INFO"Putting bpf_prog %px\n", *prog);
     bpf_prog_put(*prog);
-    printk(KERN_INFO"DONE\n");
+    //printk(KERN_INFO"DONE\n");
     *prog = NULL;
 }
 
@@ -100,17 +100,15 @@ struct kambpf_probe *kambpf_probe_alloc(unsigned long instruction_address, u32 b
     struct bpf_prog *entry_prog, *return_prog;
     struct kambpf_probe *kbp;
 
-    printk("FDS %d %d\n",bpf_entry_prog_fd, bpf_return_prog_fd);
-    printk("Adding probe\n");
     entry_prog = (bpf_entry_prog_fd != KAMBPF_PROBE_NOOP_FD) ?
-                  bpf_prog_get_type(bpf_entry_prog_fd, BPF_PROG_TYPE_KPROBE) : NULL;
+                  bpf_prog_get_type(bpf_entry_prog_fd, BPF_PROG_TYPE_KPROBE) : (struct bpf_prog *) NULL;
     if (IS_ERR(entry_prog)) {
         kbp = ERR_PTR(PTR_ERR(entry_prog));
         entry_prog = NULL;
         goto err;
     }
     return_prog = (bpf_return_prog_fd != KAMBPF_PROBE_NOOP_FD) ?
-                  bpf_prog_get_type(bpf_return_prog_fd, BPF_PROG_TYPE_KPROBE) : NULL;
+                  bpf_prog_get_type(bpf_return_prog_fd, BPF_PROG_TYPE_KPROBE) : (struct bpf_prog *) NULL;
     if (IS_ERR(return_prog)) {
         kbp = ERR_PTR(PTR_ERR(return_prog));
         return_prog = NULL;
@@ -119,7 +117,13 @@ struct kambpf_probe *kambpf_probe_alloc(unsigned long instruction_address, u32 b
 
     kbp = kambpf_probe_alloc_aux(instruction_address, entry_prog, return_prog);
 
-    printk("Probe added %px %px\n", kbp->bpf_entry_prog, kbp->bpf_return_prog);
+    // Put programs because kambpf_probe_alloc_aux made its own copies
+    if (entry_prog)
+        bpf_prog_put(entry_prog);
+    if (return_prog)
+        bpf_prog_put(return_prog);
+
+    //printk("Probe added %px %px\n", kbp->bpf_entry_prog, kbp->bpf_return_prog);
     return kbp;
 err:
     if (entry_prog)

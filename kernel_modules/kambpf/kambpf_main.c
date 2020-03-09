@@ -490,7 +490,7 @@ void unregister_major_num(void) {
 
 static int __init kambpf_module_init(void) {
     int err = 0;
-    kamprobes_init(200);
+    kamprobes_init(2000);
     err = register_major_num();
     if (err)
         goto err_major_num;

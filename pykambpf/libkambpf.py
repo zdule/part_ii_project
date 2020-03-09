@@ -58,31 +58,46 @@ class KambpfList:
         return sol
 
 class UpdatesBuffer:
-    def __init__(self, path = UPDATE_DEVICE_PATH):
+    def __init__(self, max_probes, path = UPDATE_DEVICE_PATH):
         self.probes = []
-        self._ptr = Libkambpf.open_updates_device(ct.c_char_p(path), 10000)
+        self.max_probes = max_probes
+        self._ptr = Libkambpf.open_updates_device(ct.c_char_p(path), max_probes)
     def __del__(self):
         self.clear_probes()
         Libkambpf.free_updates_buffer(self._ptr)
 
-    def add_probes(self, probes):
-        if len(self.probes) > 1000:
-            return
+    def _add_probes_chunk(self, probes):
         for i,probe in enumerate(probes):
             lib.kambpf_updates_set_entry(self._ptr, ct.c_uint32(i), ct.c_uint64(probe[0]), ct.c_uint32(probe[1]), ct.c_uint32(probe[2]))
         lib.kambpf_submit_updates(self._ptr, len(probes))
+        results = []
         for i in range(len(probes)):
             ret = lib.kambpf_updates_get_id(self._ptr, ct.c_uint32(i))
             if ret > 0:
                 self.probes.append(ret)
-    def clear_probes(self, probes=None):
-        if probes == None:
-            probes = self.probes
+            results.append(ret) 
+        return results
+
+    def add_probes(self, probes):
+        results = []
+        for i in range(0, len(probes), self.max_probes):
+            chunk = probes[i : min(len(probes), i+self.max_probes)]
+            results.extend(self._add_probes_chunk(chunk))
+        return results
+
+    def _clear_probes_chunk(self, probes):
         for i, probe in enumerate(probes):
             if  probe > 0:
                 lib.kambpf_updates_set_entry_remove(self._ptr, ct.c_uint32(i), ct.c_uint32(probe))
         lib.kambpf_submit_updates(self._ptr, len(probes))
-        probes.clear()
+
+    def clear_probes(self):
+        probes = self.probes
+        for i in range(0, len(probes), self.max_probes):
+            chunk = probes[i : min(len(probes), i+self.max_probes)]
+            self._clear_probes_chunk(chunk)
+        probes.clear() 
+        # A really misdesigned feature, If I want to remove all probes best to have an ioctl for that
 
 if __name__=="__main__":
     l = KambpfList(b"/dev/kambpf_list")

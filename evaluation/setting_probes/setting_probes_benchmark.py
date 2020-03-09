@@ -30,7 +30,7 @@ def find_addresses(call_graph, n):
     return results
 
 def attach_kamprobes(call_graph, n):
-    ub = UpdatesBuffer()
+    ub = UpdatesBuffer(n)
     addrs = find_addresses(call_graph, n)
     ub.add_probes([(addr, fd, -1) for addr in addrs])
     ub.clear_probes()
@@ -56,7 +56,7 @@ def timeit(f):
     return te-ts
 
 def run_tests(step, max_probes, repetitions, outfile):
-    experiments = [ (mechanism, probes) for probes in range(step, max_probes, step) for mechanism in ["kprobes"]] * repetitions
+    experiments = [ (mechanism, probes) for probes in range(step, max_probes, step) for mechanism in ["kamprobes", "kprobes"]] * repetitions
     shuffle(experiments)
     results = []
     reload_module()
@@ -81,7 +81,7 @@ if __name__== "__main__":
     os.makedirs('results/', exist_ok=True)
     filename = f"{datetime.datetime.now()}.csv"
     f = open("results/" + filename, 'w')
-    run_tests(50,900,5,f)
+    run_tests(50,1000,5,f)
     latest = Path('results/latest.csv')
     if latest.is_symlink():
         latest.unlink()
