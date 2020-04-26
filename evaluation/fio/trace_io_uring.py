@@ -4,9 +4,6 @@ from pykambpf import UpdatesBuffer
 
 from bcc import BPF
 import os
-from signal import SIGUSR1
-
-
 
 import ctypes as ct
 class Message(ct.Structure):
@@ -19,8 +16,8 @@ def process_message(cpu, data, size):
     total = message.completion-message.queue_entry
     pre_submit = message.op_start - message.queue_entry
     op_length = message.completion - message.op_start
-#print("lat :" + str(total))
-#print(f"split: in queue {100*pre_submit/total}%, op {100*op_length/total}%")
+    print("lat :" + str(total))
+    print(f"split: in queue {100*pre_submit/total}%, op {100*op_length/total}%")
 
 class IOUringTracer:
     def add_kambpfprobes(self, probes):

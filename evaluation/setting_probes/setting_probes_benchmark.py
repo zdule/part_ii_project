@@ -67,7 +67,7 @@ def run_tests(step, max_probes, repetitions, outfile):
     n = len(experiments)
     for (i,(mechanism, probes)) in enumerate(experiments):
         print(f"Running  {i + 1} of {n}; {mechanism} {probes}")
-        if mechanism ==     "kamprobes":
+        if mechanism == "kamprobes":
             t = timeit(lambda : attach_kamprobes(call_graph, probes))
             reload_module()
         else:

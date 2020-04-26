@@ -58,7 +58,7 @@ class KambpfList:
         return sol
 
 class UpdatesBuffer:
-    def __init__(self, max_probes, path = UPDATE_DEVICE_PATH):
+    def __init__(self, max_probes = 1000, path = UPDATE_DEVICE_PATH):
         self.probes = []
         self.max_probes = max_probes
         self._ptr = Libkambpf.open_updates_device(ct.c_char_p(path), max_probes)

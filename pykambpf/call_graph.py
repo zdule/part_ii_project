@@ -1,8 +1,8 @@
 from bisect import bisect
 
 from . import  callsites
-
-CALLS_PATH, SYMBOLS_PATH = callsites.init_cache('./cache')
+from pathlib import Path
+CALLS_PATH, SYMBOLS_PATH = callsites.init_cache(Path.home()/ ".cache/pykambpf/")
 
 KALLSYMS_PATH = '/proc/kallsyms'
 

@@ -86,12 +86,14 @@ def init_cache(cache_path):
     system_map_source = f'/boot/System.map-{uname}'
 
     if not calls_path.is_file():
+        print("Generating calls file")
         if not vmlinux_path.is_file():
             extract_vmlinux_prog = f"/usr/src/linux-headers-{uname}/scripts/extract-vmlinux"
             run([extract_vmlinux_prog, vmlinuz_source], stdout=open(vmlinux_path,'wb'))
         get_elf_details(vmlinux_path, calls_path)
 
     if not system_map_path.is_file():
+        print("Copying Systemmap file")
         shutil.copyfile(system_map_source, system_map_path)
     
     return (calls_path, system_map_path)
