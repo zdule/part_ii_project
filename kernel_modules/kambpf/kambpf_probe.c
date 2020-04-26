@@ -14,7 +14,7 @@ u64 kambpf_entry_handler(struct kambpf_probe *kbp, struct pt_regs *regs) {
     regs->ip = kbp->call_addr;
 
     preempt_disable();
-    rcu_read_lock();
+    rcu_read_lock(); // not needed ;)
     ret = BPF_PROG_RUN(kbp->bpf_entry_prog, regs); 
     rcu_read_unlock();
     preempt_enable();
@@ -25,6 +25,7 @@ u64 kambpf_entry_handler(struct kambpf_probe *kbp, struct pt_regs *regs) {
 void kambpf_return_handler(struct kambpf_probe *kbp, struct pt_regs *regs) {
     regs->ip = kbp->call_addr;
     preempt_disable();
+    // No need to rcu_read_lock();!!!! We already hold the reference for the program.
     rcu_read_lock();
     BPF_PROG_RUN(kbp->bpf_return_prog, regs); 
     rcu_read_unlock();

@@ -1,11 +1,12 @@
 import sys
-from call_graph import CallGraph
+from pykambpf import CallGraph
+from pykambpf import UpdatesBuffer
+
 from bcc import BPF
 import os
 from signal import SIGUSR1
 
 
-from libkambpf import UpdatesBuffer
 
 import ctypes as ct
 class Message(ct.Structure):
