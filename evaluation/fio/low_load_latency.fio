@@ -1,0 +1,11 @@
+[low_load_latency]
+    bs=4k
+    size=40m
+    rw=randrw
+    time_based=1
+    runtime=5s
+    ioengine=io_uring
+    ramp_time=200ms
+    rate_iops=100
+    max_latency=5ms
+    directory=testfiles
