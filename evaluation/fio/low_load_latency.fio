@@ -7,5 +7,5 @@
     ioengine=io_uring
     ramp_time=200ms
     rate_iops=100
-    max_latency=5ms
+#max_latency=5ms
     directory=testfiles

@@ -40,10 +40,10 @@ class DummyProbes():
         return results
 
     def with_kambpf_probes(self, n, run_id, function):
+        reload_module()
         if n == 0:
             function("kambpfprobes", 0, run_id)
             return
-        reload_module()
         ub = UpdatesBuffer(n)
         ub.add_probes([(addr, self.fd, -1) for addr in self.dummy_calls])
         function("kambpfprobes", n, run_id)
