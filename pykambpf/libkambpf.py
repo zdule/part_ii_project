@@ -62,11 +62,20 @@ class UpdatesBuffer:
         self.probes = []
         self.max_probes = max_probes
         self._ptr = Libkambpf.open_updates_device(ct.c_char_p(path), max_probes)
-    def __del__(self):
+
+    def close(self):
+        if self._ptr == None:
+            return
         self.clear_probes()
         Libkambpf.free_updates_buffer(self._ptr)
+        self._ptr = None
+
+    def __del__(self):
+        self.close()
 
     def _add_probes_chunk(self, probes):
+        if self._ptr == None:
+            return []
         for i,probe in enumerate(probes):
             lib.kambpf_updates_set_entry(self._ptr, ct.c_uint32(i), ct.c_uint64(probe[0]), ct.c_uint32(probe[1]), ct.c_uint32(probe[2]))
         lib.kambpf_submit_updates(self._ptr, len(probes))
@@ -79,6 +88,8 @@ class UpdatesBuffer:
         return results
 
     def add_probes(self, probes):
+        if self._ptr == None:
+            return []
         results = []
         for i in range(0, len(probes), self.max_probes):
             chunk = probes[i : min(len(probes), i+self.max_probes)]
@@ -86,13 +97,19 @@ class UpdatesBuffer:
         return results
 
     def _clear_probes_chunk(self, probes):
+        if self._ptr == None:
+            return
         for i, probe in enumerate(probes):
             if  probe > 0:
                 lib.kambpf_updates_set_entry_remove(self._ptr, ct.c_uint32(i), ct.c_uint32(probe))
+        print("Clearing ",len(probes))
         lib.kambpf_submit_updates(self._ptr, len(probes))
 
-    def clear_probes(self):
-        probes = self.probes
+    def clear_probes(self, probes=None):
+        if self._ptr == None:
+            return
+        if probes == None:
+            probes = self.probes
         for i in range(0, len(probes), self.max_probes):
             chunk = probes[i : min(len(probes), i+self.max_probes)]
             self._clear_probes_chunk(chunk)
@@ -103,5 +120,5 @@ if __name__=="__main__":
     l = KambpfList(b"/dev/kambpf_list")
     pos = l.get_non_empty_pos()
     print(pos)
-    ub = UpdatesBuffer(b"/dev/kambpf_update")
+    ub = UpdatesBuffer()
     ub.clear_probes(pos)

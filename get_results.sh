@@ -1,3 +1,4 @@
 #!/usr/bin/env bash
 
-scp $1:~/part_ii_project/evaluation/setting_probes/results/latest downloaded_results.csv
+mkdir -p measurements/$3/
+scp -r $1:~/part_ii_project/measurements/$2/$4/ measurements/$3/

@@ -22,4 +22,4 @@ def run_traced_fio(probing_mechanism, job_path, log_path, log_type='json'):
         if fio.poll() != None:
             break 
 
-    tracer.remove_probes()
+    tracer.close()

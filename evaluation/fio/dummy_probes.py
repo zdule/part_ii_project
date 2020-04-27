@@ -45,9 +45,9 @@ class DummyProbes():
             function("kambpfprobes", 0, run_id)
             return
         ub = UpdatesBuffer(n)
-        ub.add_probes([(addr, self.fd, -1) for addr in self.dummy_calls])
+        ub.add_probes([(addr, self.fd, -1) for addr in self.dummy_calls[:n]])
         function("kambpfprobes", n, run_id)
-        ub.clear_probes()
+        ub.close()
 
     def with_kprobes(self, n, run_id, function):
         for addr in self.dummy_calls[:n]:

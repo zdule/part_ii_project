@@ -3,9 +3,9 @@
     size=40m
     rw=randrw
     time_based=1
-    runtime=5s
+    runtime=2s
     ioengine=io_uring
     ramp_time=200ms
     rate_iops=100
-#max_latency=5ms
-    directory=testfiles
+	max_latency=5ms
+	directory=${project_dir}/fiotestfiles

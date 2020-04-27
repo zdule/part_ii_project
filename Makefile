@@ -48,5 +48,11 @@ run_tests: kamprobes_unload test_victim_load
 run_setting_benchmark: kambpf_load test_victim_load libkambpf
 	cd evaluation/setting_probes; ./run.sh
 
+fiotestfiles_dir:
+	mkdir -p fiotestfiles
+
+bench_scaling_latency: kambpf libkambpf test_victim_load fiotestfiles_dir
+	sudo bash -c "source scripts/env.sh; cd evaluation/fio/; python3 scaling_latency.py"
+
 dmesg:
 	dmesg
