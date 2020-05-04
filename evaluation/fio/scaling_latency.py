@@ -26,12 +26,12 @@ def main():
     
     benchmarks_config = { 
     	"latency" : { "subfolder" : "scaling_latency", "fio_file" : "low_load_latency.fio"},
-    	"bandwidth" : { "subfolder" : "scaling_bandwidth", "fio_file" : "bandwdith.fio"} }
+    	"bandwidth" : { "subfolder" : "scaling_bandwidth", "fio_file" : "bandwidth.fio"} }
     config = benchmarks_config[args.benchmark]
 
     folder = Path(args.o) / config["subfolder"]
     makedirs(folder, exist_ok=True)
-    run_benchmark(folder, args.repetitions, config["fio_file"])
+    scaling_fio_benchmark(folder, args.repetitions, config["fio_file"])
 
 if __name__ == "__main__":
     main()

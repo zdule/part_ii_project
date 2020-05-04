@@ -34,6 +34,7 @@ def attach_kamprobes(call_graph, n):
     addrs = find_addresses(call_graph, n)
     ub.add_probes([(addr, fd, -1) for addr in addrs])
     ub.clear_probes()
+    ub.close()
 
 def attach_kprobes(call_graph, n):
     global b

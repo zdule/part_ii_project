@@ -7,7 +7,6 @@
     ioengine=io_uring
     ramp_time=200ms
     rate_iops=100
-#max_latency=5ms
-	directory=${project_dir}/fiotestfiles
-	write_lat_log=str
+    directory=${project_dir}/fiotestfiles
+    write_lat_log=str
 

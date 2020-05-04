@@ -3,7 +3,7 @@
     size=40m
     rw=randrw
     ioengine=io_uring
-	io_depth=6
-	numjobs=4
+	iodepth=6
+#numjobs=4
     ramp_time=200ms
 	directory=${project_dir}/fiotestfiles

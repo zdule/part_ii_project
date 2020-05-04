@@ -66,7 +66,7 @@ class UpdatesBuffer:
     def close(self):
         if self._ptr == None:
             return
-        self.clear_probes()
+#self.clear_probes()
         Libkambpf.free_updates_buffer(self._ptr)
         self._ptr = None
 
