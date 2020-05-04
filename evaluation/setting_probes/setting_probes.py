@@ -15,6 +15,9 @@ def timeit(f):
     te = time()
     return te-ts
 
+def tripass(a,b,c):
+    pass
+
 def setting_probes_benchmark(step, max_probes, repetitions, outfile):
     experiments = [ (mechanism, probes) for probes in range(step, max_probes, step) for mechanism in ["kambpfprobes", "kprobes"]] * repetitions
     shuffle(experiments)
@@ -26,9 +29,9 @@ def setting_probes_benchmark(step, max_probes, repetitions, outfile):
         print(f"Running  {i + 1} of {n}; {mechanism} {probes}")
         
         if mechanism == "kambpfprobes":
-            t = timeit(lambda : dummies.with_kambpf_probes(lambda a,b,c: pass), probes, 0, "")
+            t = timeit(lambda : dummies.with_kambpf_probes(tripass, probes, 0, ""))
         else:
-            t = timeit(lambda : dummies.with_kprobes(lambda a,b,c: pass), probes, 0, "")
+            t = timeit(lambda : dummies.with_kprobes(tripass, probes, 0, ""))
         results.append((mechanism, probes, t))
 
     print("mechanism,n_probes,time", file=outfile)
