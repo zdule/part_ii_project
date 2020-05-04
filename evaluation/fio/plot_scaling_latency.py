@@ -63,10 +63,13 @@ def plot(results, output_path):
         groupby = results[results['mechanism'] == mech].groupby('nprobes', sort=True)
         means = groupby.mean().reset_index()
         std = groupby.std().reset_index()
+        mx = groupby.max().reset_index()
+        mn = groupby.min().reset_index()
 
         plt.plot('nprobes','rlat', data=means, label=mech)
 #plt.errorbar(means['nprobes'], means['rlat'], yerr=std['rlat'], label=mech);
         plt.fill_between(means['nprobes'], means['rlat'] - std['rlat'],means['rlat'] + std['rlat'], alpha=0.2)
+#plt.fill_between(means['nprobes'], mn['rlat'], mx['rlat'], alpha=0.2)
      
     plt.title("Read latency at low utilisation \n changing with the number of auxiliary probes")
     plt.ylabel("Average read latency [μs]")

@@ -1,3 +1,5 @@
+#!/usr/bin/make -f
+
 .PHONY: remote_test rsync
 
 REMOTE ?= kamprobes_vm

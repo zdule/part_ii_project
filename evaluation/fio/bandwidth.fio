@@ -1,13 +1,9 @@
-[latency_log]
+[bandwidth]
     bs=4k
     size=40m
     rw=randrw
-    time_based=1
-    runtime=200s
     ioengine=io_uring
+	io_depth=6
+	numjobs=4
     ramp_time=200ms
-    rate_iops=100
-#max_latency=5ms
 	directory=${project_dir}/fiotestfiles
-	write_lat_log=str
-

@@ -56,6 +56,9 @@ class DummyProbes():
         for addr in self.dummy_calls[:n]:
             self.b.detach_kprobe(event=f"0x{addr:x}")
 
+    def cleanupBPF(self):
+        self.b.cleanup()
+
 
 def run_benchmarks_with_dummies(bench, step, max_probes, repetitions=1):
     """
@@ -82,3 +85,4 @@ def run_benchmarks_with_dummies(bench, step, max_probes, repetitions=1):
             runner = runners[r]
             runner(n_probes, run_count[r], bench)
             run_count[r] += 1
+    dummies.cleanupBPF()

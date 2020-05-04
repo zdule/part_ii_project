@@ -94,6 +94,8 @@ class IOUringTracer:
         self.remove_probes()
         self.ub.close()
         self.ub = None
+        self.b.cleanup()
+        self.b = None
         self.closed = True
 
     def __del__(self):

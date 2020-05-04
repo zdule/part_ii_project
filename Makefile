@@ -52,7 +52,13 @@ fiotestfiles_dir:
 	mkdir -p fiotestfiles
 
 bench_scaling_latency: kambpf libkambpf test_victim_load fiotestfiles_dir
-	sudo bash -c "source scripts/env.sh; cd evaluation/fio/; python3 scaling_latency.py"
+	sudo bash -c "source scripts/env.sh; cd evaluation/fio/; python3 scaling_latency.py latency"
+
+bench_scaling_bandwidth: kambpf libkambpf test_victim_load fiotestfiles_dir
+	sudo bash -c "source scripts/env.sh; cd evaluation/fio/; python3 scaling_latency.py bandwidth"
+
+clean_probes:
+	sudo bash -c "source scripts/env.sh; cd pykambpf/; python3 libkambpf.py"
 
 dmesg:
 	dmesg
