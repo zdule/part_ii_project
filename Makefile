@@ -45,8 +45,11 @@ test_victim_unload:
 run_tests: kamprobes_unload test_victim_load
 	cd kernel_modules/test_victim && ./run_tests.sh
 
-run_setting_benchmark: kambpf_load test_victim_load libkambpf
-	cd evaluation/setting_probes; ./run.sh
+#run_setting_benchmark: kambpf_load test_victim_load libkambpf
+#	cd evaluation/setting_probes; ./run.sh
+
+bench_setting_probes: kambpf libkambpf test_victim_load
+	sudo bash -c "source scripts/env.sh; cd evaluation/setting_probes/; python3 setting_probes.py"
 
 fiotestfiles_dir:
 	mkdir -p fiotestfiles

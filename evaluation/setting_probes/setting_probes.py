@@ -5,7 +5,9 @@ from os import makedirs, getenv, umask
 from time import time
 from pathlib import Path
 
-from ../fio/dummy_probes import run_benchmarks_with_dummies
+from pykambpf.dummy_probes import run_benchmarks_with_dummies
+
+DEFAULT_PATH = str(Path(getenv("project_dir")) / "measurements/default")
 
 def timeit(f):
     ts = time() 

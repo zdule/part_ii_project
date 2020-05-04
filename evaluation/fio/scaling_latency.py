@@ -1,4 +1,4 @@
-from dummy_probes import run_benchmarks_with_dummies
+from pykambpf.dummy_probes import run_benchmarks_with_dummies
 from fio_helper import run_traced_fio
 from pathlib import Path
 import argparse
