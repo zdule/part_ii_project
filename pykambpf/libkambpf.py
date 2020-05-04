@@ -48,14 +48,17 @@ class Libkambpf:
 
 class KambpfList:
     def __init__(self, path):
-        self._list_dev = Libkambpf.open_list_device(ct.c_char_p(path), 10000)
-    def get_non_empty_pos(self):
+        self._list_dev = Libkambpf.open_list_device(ct.c_char_p(path), 2000)
+    def get_non_empty_addresses(self):
         sol = []
         for i in range(self._list_dev.contents.header.contents.num_entries):
             entry = self._list_dev.contents.entries[i]
             if entry.instruction_address != 0:
-                sol.append(i) 
+                sol.append((i, entry.instruction_address))
         return sol
+    def get_non_empty_pos(self):
+        addresses = self.get_non_empty_addresses()
+        return [i for (i,_) in addresses]
 
 class UpdatesBuffer:
     def __init__(self, max_probes = 1000, path = UPDATE_DEVICE_PATH):
@@ -100,8 +103,7 @@ class UpdatesBuffer:
         if self._ptr == None:
             return
         for i, probe in enumerate(probes):
-            if  probe > 0:
-                lib.kambpf_updates_set_entry_remove(self._ptr, ct.c_uint32(i), ct.c_uint32(probe))
+            lib.kambpf_updates_set_entry_remove(self._ptr, ct.c_uint32(i), ct.c_uint32(probe))
         print("Clearing ",len(probes))
         lib.kambpf_submit_updates(self._ptr, len(probes))
 
