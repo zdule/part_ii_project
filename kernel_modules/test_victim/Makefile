@@ -12,7 +12,7 @@ include common.mk
 test_helpers := $B/tests/test_helpers.o
 libkambpf := $B/libkambpf/libkambpf.o
 
-$(eval $(call SUBMAKE,tests/entry_probe_safety))
+$(eval $(call SUBMAKE,tests/probes_safety))
 $(eval $(call SUBMAKE,libkambpf))
 
 .DEFAULT_GOAL := all
@@ -23,14 +23,14 @@ clean:
 	make -C /lib/modules/$(shell uname -r)/build M=$B src=$(PWD) clean
 	rm -rf $B/tests
 
-userland := $B/tests/entry_probe_correctness/userland
+userland := $B/tests/probes_correctness/entry_probe_userland
 objs += $(userland).o
 progs += $(userland)
 $(userland)-objs := $(test_helpers) $(userland).o 
 $(userland)-libs := $(libkambpf)
 $(userland)-lflags := -lbpf -lelf
 
-userland := $B/tests/entry_probe_correctness/return_probe_userland
+userland := $B/tests/probes_correctness/return_probe_userland
 objs += $(userland).o
 progs += $(userland)
 $(userland)-objs := $(test_helpers) $(userland).o 
@@ -40,8 +40,8 @@ $(userland)-lflags := -lbpf -lelf
 objs += $B/tests/test_helpers.o
 
 
-bpf_objects += $B/tests/entry_probe_correctness/bpf.o
-bpf_objects += $B/tests/entry_probe_correctness/return_bpf.o
+bpf_objects += $B/tests/probes_correctness/bpf.o
+bpf_objects += $B/tests/probes_correctness/return_bpf.o
 
 $(objs): $B/%.o: $S/%.c
 	gcc -o $@ -c $<
