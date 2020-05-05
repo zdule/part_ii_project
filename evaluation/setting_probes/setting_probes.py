@@ -4,8 +4,9 @@ from random import shuffle
 from os import makedirs, getenv, umask
 from time import time
 from pathlib import Path
+import argparse
 
-from pykambpf.dummy_probes import run_benchmarks_with_dummies
+from pykambpf.dummy_probes import DummyProbes
 
 DEFAULT_PATH = str(Path(getenv("project_dir")) / "measurements/default")
 
@@ -15,33 +16,50 @@ def timeit(f):
     te = time()
     return te-ts
 
-def tripass(a,b,c):
-    pass
+#def tripass(a,b,c):
+#    pass
 
 def setting_probes_benchmark(step, max_probes, repetitions, outfile):
-    experiments = [ (mechanism, probes) for probes in range(step, max_probes, step) for mechanism in ["kambpfprobes", "kprobes"]] * repetitions
+    experiments = [ (mechanism, probes) for probes in range(step, max_probes+1, step) for mechanism in ["kambpfprobes", "kprobes"]] * repetitions
     shuffle(experiments)
     results = []
 
-    dummies = DumyProbes()
+    dummies = DummyProbes()
     n = len(experiments)
     for (i,(mechanism, probes)) in enumerate(experiments):
         print(f"Running  {i + 1} of {n}; {mechanism} {probes}")
-        
-        if mechanism == "kambpfprobes":
-            t = timeit(lambda : dummies.with_kambpf_probes(tripass, probes, 0, ""))
-        else:
-            t = timeit(lambda : dummies.with_kprobes(tripass, probes, 0, ""))
-        results.append((mechanism, probes, t))
+       
+        tmiddle = 0
+#def tripass(a,b,c):
+#nonlocal tmiddle
+#tmiddle = time()
 
-    print("mechanism,n_probes,time", file=outfile)
-    print("\n".join([f"{mechanism}, {probes}, {t}" for (mechanism, probes, t) in results]), file=outfile)
+        if mechanism == "kambpfprobes":
+            dummies.reload_module()
+
+        tstart = time()
+        if mechanism == "kambpfprobes":
+            dummies.set_kambpf_probes(probes)
+            tmiddle = time()
+            dummies.clear_kambpf_probes(probes)
+#t = timeit(lambda : dummies.with_kambpf_probes(probes, 0, tripass))
+        else:
+            dummies.set_kprobes(probes)
+            tmiddle = time()
+            dummies.clear_kprobes(probes)
+#t = timeit(lambda : dummies.with_kprobes(probes, 0, tripass))
+        tend = time()
+        results.append((mechanism, probes, tmiddle-tstart, tend-tmiddle))
+    dummies.cleanupBPF()
+
+    print("mechanism,n_probes,set_time,release_time", file=outfile)
+    print("\n".join([f"{mechanism}, {probes}, {tset}, {trelease}" for (mechanism, probes, tset, trelease) in results]), file=outfile)
 
 def main():
     umask(0)
 
     parser = argparse.ArgumentParser(description='Measure time taken to set probes')
-    parser.add_argument('--repetitions', type=int, default=6,
+    parser.add_argument('--repetitions', type=int, default=20,
             help='Repetitions for a single tracing mechanism and number of probes')
     parser.add_argument('-o', type=str, default=DEFAULT_PATH,
             help='Folder in which to store log results')
@@ -49,7 +67,7 @@ def main():
     
     folder = Path(args.o) / "setting_probes"
     makedirs(folder, exist_ok=True)
-    setting_probes_benchmark(50, 1000, args.repetitions, folder / "results.csv")
+    setting_probes_benchmark(50, 1000, args.repetitions, open(folder / "results.csv", 'w'))
 
 if __name__ == "__main__":
     main()

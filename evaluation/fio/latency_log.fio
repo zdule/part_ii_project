@@ -8,5 +8,6 @@
     ramp_time=200ms
     rate_iops=100
     directory=${project_dir}/fiotestfiles
-    write_lat_log=str
-
+    disable_clat=true
+    disable_slat=true
+    per_job_logs=false

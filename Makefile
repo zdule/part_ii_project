@@ -60,6 +60,9 @@ bench_scaling_latency: kambpf libkambpf test_victim_load fiotestfiles_dir
 bench_scaling_bandwidth: kambpf libkambpf test_victim_load fiotestfiles_dir
 	sudo bash -c "source scripts/env.sh; cd evaluation/fio/; python3 scaling_latency.py bandwidth"
 
+bench_distribution: kambpf libkambpf fiotestfiles_dir
+	sudo bash -c "source scripts/env.sh; cd evaluation/fio/; python3 distribution.py"
+
 test_probe_table: kambpf libkambpf kambpf_load
 	sudo bash -c "source scripts/env.sh; cd pykambpf/; python3 test.py"
 

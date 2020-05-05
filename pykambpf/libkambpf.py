@@ -1,6 +1,7 @@
 import ctypes as ct
 
 UPDATE_DEVICE_PATH = b"/dev/kambpf_update"
+LIST_DEVICE_PATH = b"/dev/kambpf_list"
 class KambpfListHeader(ct.Structure):
     _fields_ = [
         ("num_entries", ct.c_uint64),
@@ -47,7 +48,7 @@ class Libkambpf:
     free_list_device.argtypes = (ct.POINTER(None),)
 
 class KambpfList:
-    def __init__(self, path):
+    def __init__(self, path = LIST_DEVICE_PATH):
         self._list_dev = Libkambpf.open_list_device(ct.c_char_p(path), 2000)
     def get_non_empty_addresses(self):
         sol = []
@@ -59,9 +60,17 @@ class KambpfList:
     def get_non_empty_pos(self):
         addresses = self.get_non_empty_addresses()
         return [i for (i,_) in addresses]
+    def close(self):
+        if self._list_dev == None:
+            return
+        Libkambpf.free_list_device(self._list_dev)
+        self._list_dev = None
+    def __del__(self):
+        self.close()
 
 class UpdatesBuffer:
     def __init__(self, max_probes = 1000, path = UPDATE_DEVICE_PATH):
+        max_probes = max(1, max_probes)
         self.probes = []
         self.max_probes = max_probes
         self._ptr = Libkambpf.open_updates_device(ct.c_char_p(path), max_probes)
@@ -85,7 +94,7 @@ class UpdatesBuffer:
         results = []
         for i in range(len(probes)):
             ret = lib.kambpf_updates_get_id(self._ptr, ct.c_uint32(i))
-            if ret > 0:
+            if ret >= 0:
                 self.probes.append(ret)
             results.append(ret) 
         return results

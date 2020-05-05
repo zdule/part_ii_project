@@ -3,19 +3,26 @@
 import sys
 import pandas as pd
 import matplotlib.pyplot as plt
+from pathlib import Path
 
-def get_mechanisms(results):
-    return set(results.index.get_level_values('mechanism'))
-
-def process_logs(path):
+def process_logs(path, output):
     df = pd.read_csv(path)
-    df = df.groupby(['mechanism','n_probes']).mean()
-    for mechanism in get_mechanisms(df):
-        df_mech = df.loc[mechanism].reset_index()
-        n_probes = df_mech['n_probes']
-        time = df_mech['time']
-        plt.plot(n_probes,time)
+    print(df)
+    df['n_probes'] = df['n_probes'].astype(int)
+    df['set_time'] = df['set_time'].astype(float)
+#df['release_time'] = df['release_time'].astype(float)
+    for mechanism in df['mechanism'].unique():
+        df_mech = df[df['mechanism'] == mechanism].groupby('n_probes', sort=True)
+        means = df_mech.mean().reset_index()
+#means['time'] = means['set_time']+means['release_time']
+        print(means)
+        plt.plot('n_probes','set_time', data = means, label=mechanism + " set")
+        plt.plot('n_probes','release_time', data = means, label=mechanism + " release")
+    plt.legend()
+    plt.savefig(output)
     plt.show()
 
 if __name__== "__main__":
-    logs = process_logs(sys.argv[1])
+    path = Path(sys.argv[1])
+    logs = process_logs(path/"results.csv", path/"setting_probes.png")
+

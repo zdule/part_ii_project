@@ -1,15 +1,15 @@
 from bcc import BPF
-from pykambpf import UpdatesBuffer, CallGraph
+from pykambpf import UpdatesBuffer, CallGraph, KambpfList
 from random import shuffle
 import subprocess
-import os
+from os import getenv
 from pathlib import Path
 
 def reload_module():
-    subprocess.run([os.getenv("kambpf_reload"), "unload"])
-    subprocess.run([os.getenv("kamprobes_reload"), "unload"])
-    subprocess.run([os.getenv("kamprobes_reload"), "load"])
-    subprocess.run([os.getenv("kambpf_reload"), "load"])
+    subprocess.run([getenv("kambpf_reload"), "unload"])
+    subprocess.run([getenv("kamprobes_reload"), "unload"])
+    subprocess.run([getenv("kamprobes_reload"), "load"])
+    subprocess.run([getenv("kambpf_reload"), "load"])
 
 PATH_TO_TEST_MODULE = str(Path(getenv("project_dir")) / "kernel_modules/test_victim/build/test_victim_main.ko")
 dummy_name_pattern = "kambpf_test_dummy_{}"
@@ -39,27 +39,43 @@ class DummyProbes():
         results = [tup[0] for tup in results]
         return results
 
-    def with_kambpf_probes(self, n, run_id, function):
-        reload_module()
-        if n == 0:
-            function("kambpfprobes", 0, run_id)
-            return
+    def set_kambpf_probes(self, n):
         ub = UpdatesBuffer(n)
         ub.add_probes([(addr, self.fd, -1) for addr in self.dummy_calls[:n]])
-        function("kambpfprobes", n, run_id)
-        ub.clear_probes()
         ub.close()
 
-    def with_kprobes(self, n, run_id, function):
+    def clear_kambpf_probes(self, n):
+        listdev = KambpfList()
+        pos = listdev.get_non_empty_pos()
+        ub = UpdatesBuffer(len(pos))
+        ub.clear_probes(pos)
+        ub.close()
+        listdev.close()
+
+    def with_kambpf_probes(self, n, run_id, function):
+        reload_module()
+        self.set_kambpf_probes(n)
+        function("kambpfprobes", n, run_id)
+        self.clear_kambpf_probes(n)
+
+    def set_kprobes(self, n):
         for addr in self.dummy_calls[:n]:
             self.b.attach_kprobe(event=f"0x{addr:x}", fn_name="test_fun")
-        function("kprobes", n, run_id)
+
+    def clear_kprobes(self, n):
         for addr in self.dummy_calls[:n]:
             self.b.detach_kprobe(event=f"0x{addr:x}")
 
+    def with_kprobes(self, n, run_id, function):
+        self.set_kprobes(n)
+        function("kprobes", n, run_id)
+        self.clear_kprobes(n)
+
+    def reload_module(self):
+        reload_module()
+
     def cleanupBPF(self):
         self.b.cleanup()
-
 
 def run_benchmarks_with_dummies(bench, step, max_probes, repetitions=1):
     """
