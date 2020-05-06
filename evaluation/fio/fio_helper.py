@@ -15,7 +15,7 @@ def run_traced_fio(probing_mechanism, job_path, log_path, log_type='json', laten
     tracer = IOUringTracer()
     tracer.add_probes(probing_mechanism)
 
-    latency_log_options = ['--write_lat_log', 'output_path'] if latency_log else []
+    latency_log_options = ['--write_lat_log', log_path] if latency_log else []
     fio = Popen(['fio', job_path, '--output', log_path, '--output-format', log_type] + latency_log_options)
     while True:
         for _ in range(20):

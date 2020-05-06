@@ -60,7 +60,7 @@ class IOUringTracer:
 
     @guard_closed
     def add_probes(self, mechanism):
-        if mechanism == 'no_probes':
+        if mechanism == 'no_probes' or mechanism == "noprobes":
             return
         self.probing_mechanisms[mechanism]([
             (self.io_queue_work_on_addr, "tt_queue_work_on"),

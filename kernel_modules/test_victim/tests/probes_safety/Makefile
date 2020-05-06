@@ -7,6 +7,6 @@ objs += $(userland).o
 progs += $(userland)
 $(userland)-objs := $(test_helpers) $(userland).o 
 $(userland)-libs := $(libkambpf)
-$(userland)-lflags := -lbpf -lelf
+$(userland)-lflags := -lbpf -lelf -lstdc++
 
 

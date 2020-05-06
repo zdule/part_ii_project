@@ -11,14 +11,14 @@ def scaling_fio_benchmark(output_folder, repetitions, fio_file):
         print(mechanism, n_probes, run_id)
         log_path = output_folder / f"mechanism-{mechanism}_nprobes-{n_probes}_runid-{run_id}.json" 
         run_traced_fio(mechanism, fio_file, log_path, log_type='json')
-    run_benchmarks_with_dummies(bench, 50, 1000, repetitions)
+    run_benchmarks_with_dummies(bench, 2500, 5000, repetitions)
 
 def main():
     umask(0)
 
     parser = argparse.ArgumentParser(description='Run the low load latency benchmark with different number of dummy probes')
     parser.add_argument('benchmark', type=str, help='Either "latency" or "bandwidth"')
-    parser.add_argument('--repetitions', type=int, default=6,
+    parser.add_argument('--repetitions', type=int, default=1,
             help='Repetitions for a single tracing mechanism and number of probes')
     parser.add_argument('-o', type=str, default=DEFAULT_PATH,
             help='Folder in which to store log results')

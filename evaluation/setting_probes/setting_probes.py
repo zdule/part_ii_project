@@ -67,7 +67,7 @@ def main():
     
     folder = Path(args.o) / "setting_probes"
     makedirs(folder, exist_ok=True)
-    setting_probes_benchmark(50, 1000, args.repetitions, open(folder / "results.csv", 'w'))
+    setting_probes_benchmark(250, 5000, args.repetitions, open(folder / "results.csv", 'w'))
 
 if __name__ == "__main__":
     main()

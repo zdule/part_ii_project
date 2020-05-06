@@ -2,12 +2,8 @@
     bs=4k
     size=40m
     rw=randrw
-    time_based=1
-    runtime=200s
     ioengine=io_uring
     ramp_time=200ms
     rate_iops=100
     directory=${project_dir}/fiotestfiles
-    disable_clat=true
-    disable_slat=true
-    per_job_logs=false
+    per_job_logs=0

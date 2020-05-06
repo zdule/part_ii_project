@@ -1,4 +1,4 @@
-#include "tests/entry_probe_correctness/messages.h"
+#include "tests/probes_correctness/messages.h"
 #include <asm/ioctl.h>
 
 enum IOCTL_CODES {

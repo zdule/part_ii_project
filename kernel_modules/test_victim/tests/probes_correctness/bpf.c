@@ -30,15 +30,15 @@ int prog(struct pt_regs *ctx)
             .arg3 = PT_REGS_PARM3(ctx),
             .arg4 = PT_REGS_PARM4(ctx),
             .arg5 = PT_REGS_PARM5(ctx),
-            .arg6 = 0L,
+            .arg6 = ctx->r9,
             .arg7 = 0L,
             .arg8 = 0L,
         },
         .stack_id = 0,
     };
     
-	//bpf_probe_read_kernel(&message.args.arg7, sizeof(message.args.arg7), (void *) ctx->rsp);
-    //bpf_probe_read_kernel(&message.args.arg8, sizeof(message.args.arg8), (void *) ctx->rsp+8);
+	bpf_probe_read(&message.args.arg7, sizeof(message.args.arg7), (void *) ctx->rsp+8);
+    bpf_probe_read(&message.args.arg8, sizeof(message.args.arg8), (void *) ctx->rsp+16);
 
     message.stack_id = bpf_get_stackid(ctx, &stacks, BPF_F_FAST_STACK_CMP | BPF_F_REUSE_STACKID);
 

@@ -29,8 +29,8 @@ int release(struct inode *inode, struct file *filp) {
 }
 
 #include "ioctls.h"
-#include "tests/entry_probe_correctness/kernel.h"
-#include "tests/entry_probe_safety/kernel.h"
+#include "tests/probes_correctness/kernel.h"
+#include "tests/probes_safety/kernel.h"
 
 
 long test_ioctl(struct file *filp, unsigned int cmd, unsigned long arg) {

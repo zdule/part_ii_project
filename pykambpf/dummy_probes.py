@@ -20,7 +20,7 @@ int test_fun(struct pt_regs *ctx) {
 """
 
 class DummyProbes():
-    def __init__(self, call_graph = None, updates_buffer = None, max_probes = 1000):
+    def __init__(self, call_graph = None, updates_buffer = None, max_probes = 5000):
         if call_graph == None:
             call_graph = CallGraph()
             call_graph.parse_module(PATH_TO_TEST_MODULE)

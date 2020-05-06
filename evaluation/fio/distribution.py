@@ -20,7 +20,7 @@ def main():
 
     folder = Path(args.o) / "distribution"
     makedirs(folder, exist_ok=True)
-    scaling_fio_benchmark(folder)
+    distribution(folder)
 
 if __name__ == "__main__":
     main()

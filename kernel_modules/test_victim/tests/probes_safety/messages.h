@@ -2,6 +2,26 @@
 #define TEST_ENTRY_PROBE_SAFETY_MESSAGESS_H
 
 enum control_indices {
+    CALLER_TOP_OF_STACK,
+    CALLEE_TOP_OF_STACK,
+    RETURN_VALUE_1,
+    RETURN_VALUE_2,
+    RBP,
+    R12,
+    R13,
+    R14,
+    R15, 
+    RSI,
+    RDX,
+    RCX,
+    R8,
+    R9,
+    GRAND_OUT_RETURN_VALUE,
+    CONTROL_BLOCK_SIZE,
+};
+
+/*
+enum control_indices {
     IN_ARGUMENT_REGISTER,
     IN_TOP_OF_THE_STACK,
     IN_CALLEE_SAVED_REGISTER,
@@ -16,6 +36,7 @@ enum control_indices {
 
     CONTROL_BLOCK_SIZE,
 };
+*/
 
 typedef __u64 control_block_t[CONTROL_BLOCK_SIZE];
 

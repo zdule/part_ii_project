@@ -54,13 +54,17 @@
 
 kambpf_entry_handler_asm:
 
-	// Store the rsp register while it's still unmodified	
-	movq %rsp, -16(%rsp)
+	// skip ss
+	sub $8, %rsp
 
-    // skip ss, rsp, flags, cs, rip, orig_rax  = 6 registers
+	// store rsp, it will be corrected later to have its orignal value
+	// (i.e. rsp + 8)
+	push %rsp
+
+    // skip flags, cs, rip, orig_rax  = 4 registers
 	// rsp was saved previously
 	// rip will be set in the c handler
-    sub $48, %rsp
+    sub $32, %rsp
 
     // Save argument carrying registers to pass them to the eBPF program
     // But also to restore them at the end of the function
@@ -111,16 +115,20 @@ kambpf_entry_handler_asm:
     ret
 
 kambpf_return_handler_asm:
-	// Store the rsp register while it's still unmodified	
-	movq %rsp, -16(%rsp)
-
     // Since the stack is growing downwards, the pt_regs structure
     // is filled from the back to the front  
+	
+	// skip ss
+	sub $8, %rsp
 
-	// Skip ss, rsp, flags, cs, rip, orig_rax, rdi, rsi = 8 register
+	// store rsp, it will be corrected later to have its orignal value
+	// (i.e. rsp + 8)
+	push %rsp
+
+	// Skip flags, cs, rip, orig_rax, rdi, rsi = 6 register
 	// rsp was saved previously
 	// rip will be set in the c handler
-    sub $64, %rsp
+    sub $48, %rsp
    
 	// save the return value register rdx	
     push %rdx

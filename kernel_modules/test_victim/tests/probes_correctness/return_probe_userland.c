@@ -9,6 +9,7 @@
 
 #include "messages.h"
 #include "../test_helpers.h"
+#include "../kallsyms.h"
 #include "../../ioctls.h"
 #include "../../libkambpf/libkambpf.h"
 
@@ -19,21 +20,36 @@ struct perf_buf_cb_ctx {
 
 const uint64_t arg1 = 0xDEADBEEFCAFFE077;
 const uint64_t arg2 = 0xBDEFA1C035C221A4;
+const uint64_t arg3 = 0x124;
+const uint64_t arg4 = 0x1531;
+const uint64_t arg5 = 0x14111;
+const uint64_t arg6 = 0xABABA;
+const uint64_t arg7 = 0xBAFAFA;
+const uint64_t arg8 = 0x7;
 
 void sample(void *ctx, int cpu, void *data, __u32 size) {
     struct perf_buf_cb_ctx *context = (struct perf_buf_cb_ctx *) ctx;
 	struct return_probe_correctness_message *x = (struct return_probe_correctness_message *) data;
-    passert(x->return_value == (arg1 ^ arg2),
-			"Incorrect return value recorded %llx, expected %lx", x->return_value, arg1 ^ arg2);
+    passert(x->return_value == (arg1 ^ arg2 ^ arg3 ^ arg4 ^ arg5 ^ arg6 ^ arg7 ^ arg8),
+			"Incorrect return value recorded %llx, expected %lx", x->return_value, arg1 ^ arg2 ^ arg3 ^ arg4 ^ arg5 ^ arg6 ^ arg7 ^ arg8);
     context->triggered = true;
     uint64_t stacks[10];
-    printf("%llx\n", x->stack_id);
     bpf_map_lookup_elem(context->stacks_fd, &x->stack_id, stacks);
-    for(int i = 0; i < 10; i++)
-        printf("%lx\n",stacks[i]);
+	char *str = lookup(stacks[0]);
+	passert(strcmp(str,"EPC_traced_caller") == 0, "Expected first in stack to be EPC_traced_caller, found %s\n", str);
+	free(str);
+	/*
+    for(int i = 0; i < 10; i++) {
+		if (stacks[i] == 0) break;
+		char *str = lookup(stacks[i]);
+        printf("%lx %s\n",stacks[i], str);
+		free(str);
+	}
+	*/
 }
 
 int main(int argc, char **argv) {
+	init_kallsyms();
 	struct bpf_object *obj = load_obj_or_exit(argv[1]);
 	struct bpf_program *prog = find_program_by_name_or_exit(obj,"prog");
 	int fd = bpf_program__fd(prog);
@@ -67,29 +83,37 @@ int main(int argc, char **argv) {
 	passert(erry == 0, "Error retrieving address to probe, code=%d", erry);
 
 	struct kambpf_updates_buffer *updates = kambpf_open_updates_device("/dev/kambpf_update", -1);
-	kambpf_add_return_probe(updates, call_addr, empty_fd, fd);
+	int pos = kambpf_add_return_probe(updates, call_addr, empty_fd, fd);
 
     struct function_arguments args = {
         .arg1 = arg1,
         .arg2 = arg2,
-        .arg3 = 0,
-        .arg4 = 0,
-        .arg5 = 0,
-        .arg6 = 0,
-        .arg7 = 0,
-        .arg8 = 0,
+        .arg3 = arg3,
+        .arg4 = arg4,
+        .arg5 = arg5,
+        .arg6 = arg6,
+        .arg7 = arg7,
+        .arg8 = arg8,
     };
 
     int errx = ioctl(ioctlfd, IOCTL_RUN_EPC , &args);
 	passert(errx == 0, "Error triggering the probed function, code=%d", errx);
 
-    close(ioctlfd);
 	
 	int cnt = perf_buffer__poll(pb, 200);
 	passert(cnt == 1, "Number of events triggered not one cnt=%d", cnt);
     passert(context.triggered, "Event not registered");
+	kambpf_remove_probe(updates, pos);
 
+    errx = ioctl(ioctlfd, IOCTL_RUN_EPC , &args);
+	passert(errx == 0, "Error triggering the probed function for the second time, code=%d", errx);
+	cnt = perf_buffer__poll(pb, 50);
+	passert(cnt == 0, "Probe should not trigger after it is deleted, cnt = %d\n", cnt);
+
+    close(ioctlfd);
 	perf_buffer__free(pb);
 	bpf_object__unload(obj);
+
+	printf("PASSED return_probe_correctness!\n");
 	return 0;
 }

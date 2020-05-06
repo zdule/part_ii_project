@@ -49,7 +49,7 @@ class Libkambpf:
 
 class KambpfList:
     def __init__(self, path = LIST_DEVICE_PATH):
-        self._list_dev = Libkambpf.open_list_device(ct.c_char_p(path), 2000)
+        self._list_dev = Libkambpf.open_list_device(ct.c_char_p(path), 6000)
     def get_non_empty_addresses(self):
         sol = []
         for i in range(self._list_dev.contents.header.contents.num_entries):

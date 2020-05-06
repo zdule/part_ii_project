@@ -99,7 +99,7 @@ void probe_table_cleanup(struct probe_table *table) {
 void probe_table_erase(struct probe_table *table, u32 index) {
     struct probe_table_entry *e;
 
-    printk("Table %px index %d\n",table, index);
+    //printk("Table %px index %d\n",table, index);
     // acount for the header, which takes space from the first page
     u32 virtual_index = index + entries_per_header;
 
@@ -354,7 +354,7 @@ void process_update_entry(struct kambpf_update_entry *entry) {
         probe_table_erase(&list_dev.table, entry->table_pos);
     } else {
         u32 index;
-        printk("FDS %d %d\n",entry->bpf_program_fd , entry->bpf_return_program_fd);
+        //printk("FDS %d %d\n",entry->bpf_program_fd , entry->bpf_return_program_fd);
         probe_table_insert(&list_dev.table, entry->instruction_address, 
                             entry->bpf_program_fd, entry->bpf_return_program_fd, &index);
         entry->table_pos = index;
@@ -490,7 +490,7 @@ void unregister_major_num(void) {
 
 static int __init kambpf_module_init(void) {
     int err = 0;
-    kamprobes_init(2000);
+    kamprobes_init(8000);
     err = register_major_num();
     if (err)
         goto err_major_num;

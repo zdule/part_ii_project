@@ -49,13 +49,13 @@ run_tests: kamprobes_unload test_victim_load
 #	cd evaluation/setting_probes; ./run.sh
 
 bench_setting_probes: kambpf libkambpf test_victim_load
-	sudo bash -c "source scripts/env.sh; cd evaluation/setting_probes/; python3 setting_probes.py"
+	sudo bash -c "source scripts/env.sh; cd evaluation/setting_probes/; ulimit -n 40000; python3 setting_probes.py"
 
 fiotestfiles_dir:
 	mkdir -p fiotestfiles
 
 bench_scaling_latency: kambpf libkambpf test_victim_load fiotestfiles_dir
-	sudo bash -c "source scripts/env.sh; cd evaluation/fio/; python3 scaling_latency.py latency"
+	sudo bash -c "source scripts/env.sh; cd evaluation/fio/; ulimit -n 40000; python3 scaling_latency.py latency"
 
 bench_scaling_bandwidth: kambpf libkambpf test_victim_load fiotestfiles_dir
 	sudo bash -c "source scripts/env.sh; cd evaluation/fio/; python3 scaling_latency.py bandwidth"
