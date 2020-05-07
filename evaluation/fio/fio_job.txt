@@ -1,7 +1,0 @@
-[testio]
-    bs=4k
-    size=40m
-    rw=randrw
-    ioengine=io_uring
-    ramp_time=200ms
-	directory=${project_dir}/fiotestfiles

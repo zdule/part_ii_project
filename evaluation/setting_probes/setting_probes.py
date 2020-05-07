@@ -15,10 +15,7 @@ def timeit(f):
     f()
     te = time()
     return te-ts
-
-#def tripass(a,b,c):
-#    pass
-
+    
 def setting_probes_benchmark(step, max_probes, repetitions, outfile):
     experiments = [ (mechanism, probes) for probes in range(step, max_probes+1, step) for mechanism in ["kambpfprobes", "kprobes"]] * repetitions
     shuffle(experiments)
@@ -30,9 +27,6 @@ def setting_probes_benchmark(step, max_probes, repetitions, outfile):
         print(f"Running  {i + 1} of {n}; {mechanism} {probes}")
        
         tmiddle = 0
-#def tripass(a,b,c):
-#nonlocal tmiddle
-#tmiddle = time()
 
         if mechanism == "kambpfprobes":
             dummies.reload_module()
@@ -42,12 +36,10 @@ def setting_probes_benchmark(step, max_probes, repetitions, outfile):
             dummies.set_kambpf_probes(probes)
             tmiddle = time()
             dummies.clear_kambpf_probes(probes)
-#t = timeit(lambda : dummies.with_kambpf_probes(probes, 0, tripass))
         else:
             dummies.set_kprobes(probes)
             tmiddle = time()
             dummies.clear_kprobes(probes)
-#t = timeit(lambda : dummies.with_kprobes(probes, 0, tripass))
         tend = time()
         results.append((mechanism, probes, tmiddle-tstart, tend-tmiddle))
     dummies.cleanupBPF()

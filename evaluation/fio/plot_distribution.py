@@ -10,11 +10,6 @@ from process_logs import process_logs
 
 
 def plot_bandwidth(results, output_path):
-#grouped = results.groupby('mechanism')['rbw'].apply(list)
-#grouped = grouped.reset_index()
-#lists = [grouped[mech] for mech in grouped.index.values]
-#print(lists)
-#plt.boxplot(lists, labels = grouped.index.values)
     results['rbw'] /= 1024
     results['wbw'] /= 1024
     ylabels = ["Read bandwidth [MiB/s]", "Write bandwidth [MiB/s]"]
@@ -45,9 +40,7 @@ def plot(res, output_path):
         axes[len(data)-1][j].set_xlabel(xlabels[j])
 
     plt.figlegend(pacici,labels, loc = 'upper center', ncol=3 )
-#fig.text(0.5, 0.02, 'Read latency [μs]', ha='center')
     fig.text(0.04, 0.5, 'Frequency', va='center', rotation='vertical')
-#plt.tight_layout()
     plt.savefig(str(output_path / "distribution.png"))
     plt.show()
 

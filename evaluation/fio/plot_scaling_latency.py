@@ -19,9 +19,7 @@ def plot_bandwidth(results, output_path):
         mn = groupby.min().reset_index()
 
         plt.plot('nprobes','rbw', data=means, label=mech)
-#plt.errorbar(means['nprobes'], means['rlat'], yerr=std['rlat'], label=mech);
         plt.fill_between(means['nprobes'], means['rbw'] - std['rbw'],means['rbw'] + std['rbw'], alpha=0.2)
-#plt.fill_between(means['nprobes'], mn['rlat'], mx['rlat'], alpha=0.2)
      
     plt.ylabel("Bandwidth [KiB/s]")
     plt.xlabel("Number of auxiliary probes")
