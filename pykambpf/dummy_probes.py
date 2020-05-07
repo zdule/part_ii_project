@@ -77,7 +77,14 @@ class DummyProbes():
     def cleanupBPF(self):
         self.b.cleanup()
 
-def run_benchmarks_with_dummies(bench, step, max_probes, repetitions=1):
+    def runner_pass_kambpfprobes(self, n, run_id, function):
+        reload_module()
+        function("kambpfprobes", n, run_id, lambda: self.set_kambpf_probes(n), lambda: self.clear_kambpf_probes(n))
+
+    def runner_pass_kprobes(self, n, run_id, function):
+        function("kprobes", n, run_id, lambda: self.set_kprobes(n), lambda: self.clear_kprobes(n))
+
+def run_benchmarks_with_dummies(bench, step, max_probes, repetitions=1, pass_probes_to_bench=False):
     """
         Run a benchmark with different number of dummy probes set on the test module.
 
@@ -93,7 +100,10 @@ def run_benchmarks_with_dummies(bench, step, max_probes, repetitions=1):
     """
 
     dummies = DummyProbes()
-    runners = [dummies.with_kambpf_probes, dummies.with_kprobes]
+    if pass_probes_to_bench:
+        runners = [dummies.runner_pass_kambpfprobes, dummies.runner_pass_kprobes]
+    else:
+        runners = [dummies.with_kambpf_probes, dummies.with_kprobes]
     for n_probes in range(0,max_probes+1, step):
         runner_ids = [0,1]*repetitions 
         shuffle(runner_ids)
