@@ -1,3 +1,9 @@
+Note that libkambpf is separated in a subrepo which is present in
+three places in this repo in:
+./libkambpf
+./kernel_modules/kambpf/libkambpf
+./kernel_modules/test_module/libkambpf
+
 # Make sure you are running at least version 5.3 of the kernel
 # For moving from 4.15 installed on Ubuntu 18.04, you need to install
 sudo apt-get install --install-recommends linux-generic-hwe-18.04
