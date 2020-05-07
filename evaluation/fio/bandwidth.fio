@@ -4,6 +4,5 @@
     rw=randrw
     ioengine=io_uring
 	iodepth=6
-#numjobs=4
     ramp_time=200ms
 	directory=${project_dir}/fiotestfiles
