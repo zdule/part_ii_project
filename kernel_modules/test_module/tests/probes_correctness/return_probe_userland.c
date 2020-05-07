@@ -18,13 +18,20 @@ struct perf_buf_cb_ctx {
     int stacks_fd;
 };
 
+const uint64_t arg1 = 0xDEADBEEFCAFFE077;
+const uint64_t arg2 = 0xBDEFA1C035C221A4;
+const uint64_t arg3 = 0x124;
+const uint64_t arg4 = 0x1531;
+const uint64_t arg5 = 0x14111;
+const uint64_t arg6 = 0xABABA;
+const uint64_t arg7 = 0xBAFAFA;
+const uint64_t arg8 = 0x7;
+
 void sample(void *ctx, int cpu, void *data, __u32 size) {
     struct perf_buf_cb_ctx *context = (struct perf_buf_cb_ctx *) ctx;
-	struct entry_probe_correctness_message *x = (struct entry_probe_correctness_message *) data;
-	passert(x->args.arg1 == 11001 && x->args.arg2 == 11002 && x->args.arg3 == 11003 && x->args.arg4 == 11004 && x->args.arg5 == 11005 && x->args.arg6 == 11006
-			&& x->args.arg7 == 11007 && x->args.arg8 == 11008, 
-			"Incorrect arguments recorded %lld %lld %lld %lld %lld %lld %lld %lld\n", x->args.arg1, x->args.arg2, x->args.arg3, x->args.arg4, x->args.arg5,
-			x->args.arg6, x->args.arg7, x->args.arg8);
+	struct return_probe_correctness_message *x = (struct return_probe_correctness_message *) data;
+    passert(x->return_value == (arg1 ^ arg2 ^ arg3 ^ arg4 ^ arg5 ^ arg6 ^ arg7 ^ arg8),
+			"Incorrect return value recorded %llx, expected %lx", x->return_value, arg1 ^ arg2 ^ arg3 ^ arg4 ^ arg5 ^ arg6 ^ arg7 ^ arg8);
     context->triggered = true;
     uint64_t stacks[10];
     bpf_map_lookup_elem(context->stacks_fd, &x->stack_id, stacks);
@@ -48,6 +55,12 @@ int main(int argc, char **argv) {
 	int fd = bpf_program__fd(prog);
     int stacks_fd = find_map_fd_by_name_or_exit(obj, "stacks");
 
+	//struct bpf_object *empty_obj = load_obj_or_exit(argv[2]);
+    struct bpf_program *prog_empty = find_program_by_name_or_exit(obj, "empty");
+    int empty_fd = bpf_program__fd(prog_empty);
+
+    printf("FDS %d %d\n", fd, empty_fd);
+
     struct perf_buf_cb_ctx context = {
         .triggered = false,
         .stacks_fd = stacks_fd,
@@ -61,8 +74,8 @@ int main(int argc, char **argv) {
 
 	struct perf_buffer *pb = setup_perf_events_cb(obj, "perf_event", 2, &opts);
 
-    int ioctlfd = open("/dev/test_victim", O_RDONLY);
-	passert(ioctlfd > 0, "Error opening testing device %s, ioctlfd=%d","/dev/test_victim",ioctlfd);
+    int ioctlfd = open("/dev/test_module", O_RDONLY);
+	passert(ioctlfd > 0, "Error opening testing device %s, ioctlfd=%d","/dev/test_module",ioctlfd);
 
     uint64_t call_addr;
 
@@ -70,23 +83,24 @@ int main(int argc, char **argv) {
 	passert(erry == 0, "Error retrieving address to probe, code=%d", erry);
 
 	struct kambpf_updates_buffer *updates = kambpf_open_updates_device("/dev/kambpf_update", -1);
-	int pos = kambpf_add_probe(updates, call_addr, fd);
-    passert(pos > 0, "Error instrumenting probe, code = %d\n",pos);
+	int pos = kambpf_add_return_probe(updates, call_addr, empty_fd, fd);
+
     struct function_arguments args = {
-        .arg1 = 11001,
-        .arg2 = 11002,
-        .arg3 = 11003,
-        .arg4 = 11004,
-        .arg5 = 11005,
-        .arg6 = 11006,
-        .arg7 = 11007,
-        .arg8 = 11008,
+        .arg1 = arg1,
+        .arg2 = arg2,
+        .arg3 = arg3,
+        .arg4 = arg4,
+        .arg5 = arg5,
+        .arg6 = arg6,
+        .arg7 = arg7,
+        .arg8 = arg8,
     };
 
     int errx = ioctl(ioctlfd, IOCTL_RUN_EPC , &args);
 	passert(errx == 0, "Error triggering the probed function, code=%d", errx);
+
 	
-	int cnt = perf_buffer__poll(pb, 50);
+	int cnt = perf_buffer__poll(pb, 200);
 	passert(cnt == 1, "Number of events triggered not one cnt=%d", cnt);
     passert(context.triggered, "Event not registered");
 	kambpf_remove_probe(updates, pos);
@@ -100,6 +114,6 @@ int main(int argc, char **argv) {
 	perf_buffer__free(pb);
 	bpf_object__unload(obj);
 
-	printf("PASSED entry_probe_correctness!\n");
+	printf("PASSED return_probe_correctness!\n");
 	return 0;
 }

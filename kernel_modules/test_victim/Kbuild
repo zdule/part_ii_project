@@ -1,4 +1,0 @@
-obj-m += test_victim_main.o
-test_victim_main-objs += test_victim.o tests/probes_correctness/kernel.o tests/probes_safety/kernel.o  tests/probes_safety/asm.o dummy_functions/dummy.o
-
-ccflags-y := -I/usr/local/include

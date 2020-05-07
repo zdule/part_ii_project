@@ -13,7 +13,7 @@ MODULE_AUTHOR("Dusan Zivanovic");
 MODULE_DESCRIPTION("Test module to probe");
 MODULE_VERSION("0.01");
 
-#define MODULE_NAME "test_victim"
+#define MODULE_NAME "test_module"
 
 uint major = 0;
 module_param(major, uint, S_IRUGO);
@@ -72,7 +72,7 @@ void unregister_major_num(void) {
     unregister_chrdev_region(MKDEV(major, 0), 1);
 }
 
-static int __init test_victim_init(void) {
+static int __init test_module_init(void) {
 	int err;
     err = register_major_num();
 	if (err < 0) 
@@ -90,10 +90,10 @@ static int __init test_victim_init(void) {
 	return 0;
 }
 
-static void __exit test_victim_exit(void) {
+static void __exit test_module_exit(void) {
     cdev_del(&cdev);
     unregister_major_num();
 }
 
-module_init(test_victim_init);
-module_exit(test_victim_exit);
+module_init(test_module_init);
+module_exit(test_module_exit);

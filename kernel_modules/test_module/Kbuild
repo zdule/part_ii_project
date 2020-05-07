@@ -1,0 +1,4 @@
+obj-m += test_module_main.o
+test_module_main-objs += test_module.o tests/probes_correctness/kernel.o tests/probes_safety/kernel.o  tests/probes_safety/asm.o dummy_functions/dummy.o
+
+ccflags-y := -I/usr/local/include

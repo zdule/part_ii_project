@@ -18,8 +18,8 @@ int main(int argc, char **argv) {
 	int fd = bpf_program__fd(prog);
     int triggered_fd = find_map_fd_by_name_or_exit(obj, "triggered");
 
-    int ioctlfd = open("/dev/test_victim", O_RDONLY);
-	passert(ioctlfd > 0, "Error opening testing device %s, ioctlfd=%d","/dev/test_victim",ioctlfd);
+    int ioctlfd = open("/dev/test_module", O_RDONLY);
+	passert(ioctlfd > 0, "Error opening testing device %s, ioctlfd=%d","/dev/test_module",ioctlfd);
 
     uint64_t call_addr;
 

@@ -11,7 +11,7 @@ def reload_module():
     subprocess.run([getenv("kamprobes_reload"), "load"])
     subprocess.run([getenv("kambpf_reload"), "load"])
 
-PATH_TO_TEST_MODULE = str(Path(getenv("project_dir")) / "kernel_modules/test_victim/build/test_victim_main.ko")
+PATH_TO_TEST_MODULE = str(Path(getenv("project_dir")) / "kernel_modules/test_module/build/test_module_main.ko")
 dummy_name_pattern = "kambpf_test_dummy_{}"
 prog_text = """
 int test_fun(struct pt_regs *ctx) {

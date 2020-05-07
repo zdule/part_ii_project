@@ -2,7 +2,7 @@
 	path = kernel_modules/kambpf/libkambpf
 	url = git@github.com:zdule/libkambpf.git
 [submodule "test_victim/libkambpf"]
-	path = kernel_modules/test_victim/libkambpf
+	path = kernel_modules/test_module/libkambpf
 	url = git@github.com:zdule/libkambpf.git
 [submodule "kamprobes"]
 	path = kernel_modules/kamprobes

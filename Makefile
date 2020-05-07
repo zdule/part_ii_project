@@ -1,8 +1,8 @@
-.PHONY : all kamprobes  kambpf test_victim test_victim_load  test_victim_unload \
+.PHONY : all kamprobes  kambpf test_module test_module_load  test_module_unload \
 		 kambpf_load kambpf_unload  kamprobes_load kamprobes_unload libkambpf \
 		 kambpf_reload dmesg run_tests
 
-all: kamprobes kambpf test_victim libkambpf
+all: kamprobes kambpf test_module libkambpf
 
 kamprobes:
 	cd kernel_modules/kamprobes && make
@@ -19,8 +19,8 @@ kambpf: kamprobes
 libkambpf:
 	make -f libkambpf/Makefile S=libkambpf B=libkambpf/build
 
-test_victim: kambpf
-	cd kernel_modules/test_victim && make
+test_module: kambpf
+	cd kernel_modules/test_module && make
 
 kamprobes_load: kamprobes
 	sudo ./scripts/kamprobes_reload.sh load
@@ -31,33 +31,33 @@ kamprobes_unload: kambpf_unload
 kambpf_load: kamprobes_load kambpf
 	sudo ./scripts/kambpf_reload.sh load
 
-kambpf_unload: test_victim_unload
+kambpf_unload: test_module_unload
 	sudo ./scripts/kambpf_reload.sh unload
 
 kambpf_reload: kambpf_unload kambpf_load
 
-test_victim_load: kambpf_load test_victim
-	sudo ./scripts/test_victim_reload.sh load
+test_module_load: kambpf_load test_module
+	sudo ./scripts/test_module_reload.sh load
 
-test_victim_unload:
-	sudo ./scripts/test_victim_reload.sh unload
+test_module_unload:
+	sudo ./scripts/test_module_reload.sh unload
 
-run_tests: kamprobes_unload test_victim_load
-	cd kernel_modules/test_victim && ./run_tests.sh
+run_tests: kamprobes_unload test_module_load
+	cd kernel_modules/test_module && ./run_tests.sh
 
-#run_setting_benchmark: kambpf_load test_victim_load libkambpf
+#run_setting_benchmark: kambpf_load test_module_load libkambpf
 #	cd evaluation/setting_probes; ./run.sh
 
-bench_setting_probes: kambpf libkambpf test_victim_load
+bench_setting_probes: kambpf libkambpf test_module_load
 	sudo bash -c "source scripts/env.sh; cd evaluation/setting_probes/; ulimit -n 40000; python3 setting_probes.py"
 
 fiotestfiles_dir:
 	mkdir -p fiotestfiles
 
-bench_scaling_latency: kambpf libkambpf test_victim_load fiotestfiles_dir
+bench_scaling_latency: kambpf libkambpf test_module_load fiotestfiles_dir
 	sudo bash -c "source scripts/env.sh; cd evaluation/fio/; ulimit -n 40000; python3 scaling_latency.py latency"
 
-bench_scaling_bandwidth: kambpf libkambpf test_victim_load fiotestfiles_dir
+bench_scaling_bandwidth: kambpf libkambpf test_module_load fiotestfiles_dir
 	sudo bash -c "source scripts/env.sh; cd evaluation/fio/; python3 scaling_latency.py bandwidth"
 
 bench_distribution: kambpf libkambpf fiotestfiles_dir
