@@ -58,7 +58,10 @@ bench_scaling_latency: kambpf libkambpf test_module_load fiotestfiles_dir
 	sudo bash -c "source scripts/env.sh; cd evaluation/fio/; ulimit -n 40000; python3 scaling_latency.py latency"
 
 bench_scaling_bandwidth: kambpf libkambpf test_module_load fiotestfiles_dir
-	sudo bash -c "source scripts/env.sh; cd evaluation/fio/; python3 scaling_latency.py bandwidth"
+	sudo bash -c "source scripts/env.sh; cd evaluation/fio/; ulimit -n 4000; python3 scaling_latency.py bandwidth"
+
+bench_opt_scaling_bandwidth: kambpf libkambpf test_module_load fiotestfiles_dir
+	sudo bash -c "source scripts/env.sh; cd evaluation/fio/; ulimit -n 40000; python3 optimized_scaling.py bandwidth"
 
 bench_distribution: kambpf libkambpf fiotestfiles_dir
 	sudo bash -c "source scripts/env.sh; cd evaluation/fio/; python3 distribution.py"

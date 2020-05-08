@@ -19,9 +19,10 @@ def plot_bandwidth(results, output_path):
         mn = groupby.min().reset_index()
 
         plt.plot('nprobes','rbw', data=means, label=mech)
-        plt.fill_between(means['nprobes'], means['rbw'] - std['rbw'],means['rbw'] + std['rbw'], alpha=0.2)
+        plt.fill_between(means['nprobes'], mx['rbw'],mn['rbw'], alpha=0.2)
+#plt.fill_between(means['nprobes'], means['rbw'] - std['rbw'],means['rbw'] + std['rbw'], alpha=0.2)
      
-    plt.ylabel("Bandwidth [KiB/s]")
+    plt.ylabel("Throughput [KiB/s]")
     plt.xlabel("Number of auxiliary probes")
 
     plt.legend()
@@ -40,7 +41,8 @@ def plot(results, output_path):
         mn = groupby.min().reset_index()
 
         plt.plot('nprobes','rlat', data=means, label=mech)
-        plt.fill_between(means['nprobes'], means['rlat'] - std['rlat'],means['rlat'] + std['rlat'], alpha=0.2)
+        plt.fill_between(means['nprobes'], mx['rlat'],mn['rlat'], alpha=0.2)
+#plt.fill_between(means['nprobes'], means['rlat'] - std['rlat'],means['rlat'] + std['rlat'], alpha=0.2)
      
     plt.ylabel("Average read latency [μs]")
     plt.xlabel("Number of auxiliary probes")

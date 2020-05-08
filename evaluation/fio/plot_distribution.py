@@ -12,7 +12,7 @@ from process_logs import process_logs
 def plot_bandwidth(results, output_path):
     results['rbw'] /= 1024
     results['wbw'] /= 1024
-    ylabels = ["Read bandwidth [MiB/s]", "Write bandwidth [MiB/s]"]
+    ylabels = ["Read throughput [MiB/s]", "Write throughput [MiB/s]"]
     fig, axes = plt.subplots(1,2, sharey=True, figsize=(8,4))
     for i, rw in enumerate(['rbw','wbw']):
         sb.boxplot(x="mechanism", y=rw, data=results, showfliers = False, ax=axes[i])

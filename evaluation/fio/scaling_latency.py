@@ -1,5 +1,5 @@
 from pykambpf.dummy_probes import run_benchmarks_with_dummies
-from fio_helper import run_traced_fio
+from fio_helper import rund_fio
 from pathlib import Path
 import argparse
 from os import makedirs, getenv, umask

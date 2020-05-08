@@ -3,6 +3,7 @@ from glob import glob
 import pandas as pd
 
 def process_log(path):
+    print(path)
     log = json.load(open(path,'r')) 
     log = log['jobs'][0]
 

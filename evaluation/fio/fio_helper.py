@@ -1,6 +1,10 @@
 from subprocess import Popen
 from trace_io_uring import IOUringTracer
 
+def run_fio(job_path, log_path, log_type='json', latency_log=False):
+    latency_log_options = ['--write_lat_log', log_path] if latency_log else []
+    fio = Popen(['fio', job_path, '--output', log_path, '--output-format', log_type] + latency_log_options)
+
 def run_traced_fio(probing_mechanism, job_path, log_path, log_type='json', latency_log=False, post_probing_cb=None):
     """
         Run a fio benchmark while tracing io_uring
@@ -17,9 +21,8 @@ def run_traced_fio(probing_mechanism, job_path, log_path, log_type='json', laten
 
     if post_probing_cb is not None:
         post_probing_cb()
-
-    latency_log_options = ['--write_lat_log', log_path] if latency_log else []
-    fio = Popen(['fio', job_path, '--output', log_path, '--output-format', log_type] + latency_log_options)
+    
+    run_fio(job_path, log_path, log_type, latency_log)
     while True:
         for _ in range(20):
             tracer.receive_messages()
