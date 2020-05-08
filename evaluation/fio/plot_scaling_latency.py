@@ -11,6 +11,7 @@ def fix_types(results):
 
 def plot_bandwidth(results, output_path):
     mechanisms = results['mechanism'].unique()
+    results['rbw'] /= 1024
     for mech in mechanisms:
         groupby = results[results['mechanism'] == mech].groupby('nprobes', sort=True)
         means = groupby.mean().reset_index()
@@ -22,7 +23,7 @@ def plot_bandwidth(results, output_path):
         plt.fill_between(means['nprobes'], mx['rbw'],mn['rbw'], alpha=0.2)
 #plt.fill_between(means['nprobes'], means['rbw'] - std['rbw'],means['rbw'] + std['rbw'], alpha=0.2)
      
-    plt.ylabel("Throughput [KiB/s]")
+    plt.ylabel("Throughput [MiB/s]")
     plt.xlabel("Number of auxiliary probes")
 
     plt.legend()
