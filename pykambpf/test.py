@@ -1,3 +1,9 @@
+#   This file is part of the kambpf project (https://github.com/zdule/part_ii_project).
+#   It is file is offered under two licenses GPLv2 and Apache License Version 2.
+#   For more information see the LICENSE file at the root of the project.
+#
+#   Copyright 2020 Dusan Zivanovic
+
 from libkambpf import KambpfList, UpdatesBuffer
 
 if __name__=="__main__":
@@ -18,7 +24,7 @@ if __name__=="__main__":
     assert len(found_probes) == 1000, f"Different number of probes in the table to how many were inserted. len(found_probes) = {len(found_probes)}"
     for pos, addr in l.get_non_empty_addresses():
         assert pos in pos_to_addr, "Found probe at position which the test didn't set it at."
-        assert(pos_to_addr[pos] == addr, "Different address in the table to what we inserted."
+        assert(pos_to_addr[pos] == addr, "Different address in the table to what we inserted.")
 
     ub.clear_probes([i for (i,_) in found_probes])
     pos = l.get_non_empty_pos()
